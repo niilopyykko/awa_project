@@ -62,7 +62,7 @@ export default function Upload() {
         if (error.message === 'Access denied, missing token') {
           alert('Your session has expired. Please log in again.')
           localStorage.removeItem('token')
-          window.location.href = '/pages/login'
+          window.location.href = '/login'
         }
       }
     }
@@ -83,7 +83,7 @@ export default function Upload() {
       {!jwt ? (
         <>
           <p>Please login to see file upload</p>
-          <Link href="/pages/login" className="bg-amber-500 border-2 p-1 m-2 border-amber-50">Log in</Link>
+          <Link href="/login" className="bg-amber-500 border-2 p-1 m-2 border-amber-50">Log in</Link>
         </>
       ) : (
         <div className="flex flex-col col-auto">

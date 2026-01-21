@@ -23,7 +23,7 @@ export default function Register() {
     if (response.status == 200) {
       setUserPrompt("Register successfull, forwarding to login page in 3 seconds")
       setTimeout(() => {
-        window.location.href = "/pages/login"
+        window.location.href = "/login"
       }, 3000)
     }
     else if (response.status == 403) {
@@ -35,13 +35,13 @@ export default function Register() {
     else if (response.status == 500) setUserPrompt("Internal server error")
   }
   return (
-    <div className="bg-blue-700">
-      <form onSubmit={(e) => { e.preventDefault(); submitRegister(); }} className="bg-amber-50 flex-grid grid-cols-2">
-        <input onChange={e => setUsername(e.target.value)} type="username" placeholder="username" className="border-red-600 border-2 bor m-2 text-black text-2xl" />
-        <input onChange={e => setPassword(e.target.value)} type="password" placeholder="password" className="border-red-600 border-2 m-2 text-black text-2xl" />
-        <button type="submit" className="bg-red-800 text-yellow-600 m-2 border-2 text-2xl">Register</button>
+    <div style={{ minHeight: 'calc(100vh - 3.5rem)' }} className="bg-blue-500 w-full flex flex-col items-center justify-center">
+      <form onSubmit={(e) => { e.preventDefault(); submitRegister(); }} className="bg-amber-50 flex flex-col items-center max-w-md m-0 p-4 space-y-3 rounded-md">
+        <input onChange={e => setUsername(e.target.value)} type="username" placeholder="username" className="border-red-600 border-2 m-2 text-black md:text-3xl text-2xl rounded-md" />
+        <input onChange={e => setPassword(e.target.value)} type="password" placeholder="password" className="border-red-600 border-2 m-2 text-black md:text-3xl text-2xl rounded-md" />
+        <button type="submit" className="bg-red-800 text-yellow-600 m-2 border-2 text-2xl px-2 rounded-md hover:bg-amber-600 hover:text-black active:bg-red-600">Register</button>
       </form>
-      <p>{userPrompt}</p>
+      {!userPrompt ? (<></>) : (<p className="max-w-md mx-auto border-2 border-blue-200 p-2 m-4 text-center rounded bg-white text-black">{userPrompt}</p>)}
     </div>
   )
 }

@@ -5,15 +5,13 @@ import { useState, useEffect } from 'react'
 
 export default function Navbar() {
     const [token, setToken] = useState<string | null>(null)
-    const [mounted, setMounted] = useState(false)
+    const [menuOpen, setMenuOpen] = useState(false)
+
 
     useEffect(() => {
-        const timer = setTimeout(() => { //this makes it async and i get no more errors
-            setToken(localStorage.getItem('token'))
-            setMounted(true)
-        }, 0)
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setToken(localStorage.getItem('token'))
 
-        return () => clearTimeout(timer)
     }, [])
 
     const logout = () => {
@@ -21,35 +19,74 @@ export default function Navbar() {
         setToken(null)
     }
 
-    if (!mounted) {
-        return (
-            <nav className="bg-blue-600 text-white p-4 flex gap-4">
-                <Link href="/">Home</Link>
-                <Link href="/about">About</Link>
-                <Link href="/editor">Editor</Link>
-                <Link href="/upload">Upload</Link>
-                <Link href="/login">Log in</Link>
-            </nav>
-        )
-    }
 
     return (
-        <nav className="bg-blue-600 text-white p-4 flex gap-4">
-            <Link href="/">Home</Link>
-            <Link href="/about">About</Link>
-            <Link href="/editor">Editor</Link>
-            <Link href="/upload">Upload</Link>
+        <nav className="sticky top-0 z-50 bg-blue-600 text-white p-4">
+            <div className="flex items-center w-full gap-4">
+                {/* HOMEBUTTON */}
+                <Link href="/" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Home</Link>
 
-            {!token && <Link href="/login">Log in</Link>}
-            {!token && <Link href="/register">Register</Link>}
+                {/* Desktop menu (hidden on mobile) */}
+                <div className="hidden md:flex gap-4 items-center">
+                    <Link href="/editor" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Editor</Link>
+                    <Link href="/upload" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Upload</Link>
+                </div>
 
-            {token && (
+                {/* Right side auth (desktop) */}
+                <div className="ml-auto hidden md:flex gap-4 items-center">
+                    {!token && <Link href="/login" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Log in</Link>}
+                    {!token && <Link href="/register" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Register</Link>}
+
+                    {token && (
+                        <button
+                            onClick={logout}
+                            className="bg-red-500 p-2 rounded hover:bg-red-600 hover:cursor-pointer"
+                        >
+                            Log out
+                        </button>
+                    )}
+                </div>
+
+                {/* Burger button (mobile) - visible only on small screens */}
                 <button
-                    onClick={logout}
-                    className="bg-red-500 px-2 py-1 rounded hover:bg-red-600"
+                    className="md:hidden ml-auto text-2xl hover:bg-blue-700 active:bg-blue-800 border-2 bg-blue-500  rounded-md p-1"
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    aria-label="Toggle menu"
                 >
-                    Log out
+                    ☰
                 </button>
+            </div>
+
+            {/* Mobile menu: shown below nav on small screens */}
+            {menuOpen && (
+                <div className="md:hidden mt-2 p-4 flex flex-col gap-4 bg-blue-600 text-white">
+                    <Link href="/editor" onClick={() => setMenuOpen(false)}>
+                        Editor
+                    </Link>
+                    <Link href="/upload" onClick={() => setMenuOpen(false)}>
+                        Upload
+                    </Link>
+
+                    {!token && (
+                        <Link href="/login" onClick={() => setMenuOpen(false)}>
+                            Log in
+                        </Link>
+                    )}
+                    {!token && (
+                        <Link href="/register" onClick={() => setMenuOpen(false)}>
+                            Register
+                        </Link>
+                    )}
+
+                    {token && (
+                        <button
+                            onClick={() => { logout(); setMenuOpen(false); }}
+                            className="bg-red-500 px-2 py-1 rounded hover:bg-red-600 text-left"
+                        >
+                            Log out
+                        </button>
+                    )}
+                </div>
             )}
         </nav>
     )

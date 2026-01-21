@@ -3,7 +3,7 @@ import { useState } from "react"
 import Link from "next/link"
 
 export default function Login() {
-  const [userPrompt, setUserPrompt] = useState('')
+  const [userPrompt, setUserPrompt] = useState<string>('')
   const [username, setUsername] = useState<string>('')
   const [password, setPassword] = useState<string>('')
 
@@ -21,19 +21,15 @@ export default function Login() {
           password: password
         })
       })
-
-      if (!response.ok) {
-        throw new Error("Error fetching data")
-      }
       const data = await response.json()
       console.log(response.status, data)
-      if (response.status === 401) {
-        setUserPrompt("Login failed")
+
+      if (!response.ok) {
+        if (response.status === 401) { setUserPrompt("Login failed, wrong password or user doesn't exist") }
+        else if (response.status === 400) { setUserPrompt("error") }
+        else if (response.status === 500) { setUserPrompt("Internal server error") }
+        else throw new Error("Error fetching data")
       }
-      else if (response.status === 400) {
-        setUserPrompt("error")
-      }
-      else if (response.status === 500) setUserPrompt("Internal server error")
 
       if (data.token) {
         localStorage.setItem("token", data.token)
@@ -49,23 +45,20 @@ export default function Login() {
         console.log(`Error when trying to login: ${error.message}`)
       }
     }
-
-
+    console.log(userPrompt)
   }
 
-  return (
-    <div className="bg-blue-700">
-      <form onSubmit={(e) => { e.preventDefault(); fetchData(username, password); }} className="bg-amber-50 flex-grid grid-cols-2">
-        <input type="username" placeholder="username" onChange={(e) => setUsername(e.target.value)}
-          className="border-red-600 border-2 m-2 text-black text-2xl" />
+  return (//cursed style to make navbar work
+    <div style={{ minHeight: 'calc(100vh - 3.5rem)' }} className="bg-blue-500 w-full flex flex-col items-center justify-center">
+      <form onSubmit={(e) => { e.preventDefault(); fetchData(username, password); }} className="bg-amber-50 flex flex-col items-center max-w-md m-0 p-4 space-y-3 rounded-md">
+        <input type="text" placeholder="username" onChange={(e) => setUsername(e.target.value)}
+          className="border-red-600 border-2 m-2 text-black md:text-3xl text-2xl rounded-md" />
         <input type="password" placeholder="password" onChange={(e) => setPassword(e.target.value)}
-          className="border-red-600 border-2 m-2 text-black text-2xl" />
-        <label htmlFor="remember" className="text-black text-2xl ml-2">Remember me</label>
-        <input type="checkbox" name="remember" id="asdasd" className="mr-2" />
-        <button type="submit" className="bg-red-800 text-yellow-600 m-2 border-2 text-2xl">Log in</button>
-        <Link href="/pages/register" className="text-blue-600 text-md m-2 underline">Not registered? Sign up</Link>
+          className="border-red-600 border-2 m-2 text-black md:text-3xl text-2xl rounded-md" />
+        <button type="submit" className="bg-red-800 text-yellow-600 m-2 border-2 text-2xl px-2 rounded-md hover:bg-amber-600 hover:text-black active:bg-red-600">Log in</button>
+        <Link href="/register" className="text-blue-600 text-md m-2 underline">Not registered? Sign up</Link>
       </form>
-      <p>{userPrompt}</p>
-    </div>
+      {!userPrompt ? (<></>) : (<p className="max-w-md mx-auto border-2 border-blue-200 p-2 m-4 text-center rounded bg-white text-black">{userPrompt}</p>)}
+    </div >
   )
 }
