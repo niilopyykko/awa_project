@@ -6,7 +6,7 @@ interface IUserDocument extends Document {
 
     editors: string[] //list of users with permission to edit
     isVisibleNonAuth: boolean  //if document is visible to users that are not logged in
-
+    content: string
     createdAt: Date
     id?: string
     filepath: string
@@ -20,8 +20,9 @@ const userDocumentSchema = new Schema({
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
     editors: [{ type: String }],
     isVisibleNonAuth: { type: Boolean, default: false },
-    createdAt: { type: Date },
-    filepath: { type: String, required: true },
+    content: { type: String, default: null},
+    createdAt: { type: Date},
+    filepath: { type: String, default: null},
     shareToken: { type: String },
     readOnlyLink: { type: String }
 })

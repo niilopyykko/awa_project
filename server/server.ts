@@ -21,7 +21,6 @@ db.on("error", console.error.bind(console, "MongoDB connection error"))
 
 const corsOptions: CorsOptions = {
     origin: [
-        'http://localhost:5173',
         'http://localhost:3000'
     ],
     credentials: true,

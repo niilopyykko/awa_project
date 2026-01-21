@@ -48,8 +48,8 @@ export default function Login() {
     console.log(userPrompt)
   }
 
-  return (//cursed style to make navbar work
-    <div style={{ minHeight: 'calc(100vh - 3.5rem)' }} className="bg-blue-500 w-full flex flex-col items-center justify-center">
+  return (
+    <div className="w-full min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center">
       <form onSubmit={(e) => { e.preventDefault(); fetchData(username, password); }} className="bg-amber-50 flex flex-col items-center max-w-md m-0 p-4 space-y-3 rounded-md">
         <input type="text" placeholder="username" onChange={(e) => setUsername(e.target.value)}
           className="border-red-600 border-2 m-2 text-black md:text-3xl text-2xl rounded-md" />

@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 
+
 export default function Navbar() {
+
     const [token, setToken] = useState<string | null>(null)
     const [menuOpen, setMenuOpen] = useState(false)
 
@@ -17,12 +19,13 @@ export default function Navbar() {
     const logout = () => {
         localStorage.removeItem('token')
         setToken(null)
+        location.reload();
     }
 
 
     return (
-        <nav className="sticky top-0 z-50 bg-blue-600 text-white p-4">
-            <div className="flex items-center w-full gap-4">
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white h-16">
+            <div className="flex items-center w-full gap-4 h-full px-4">
                 {/* HOMEBUTTON */}
                 <Link href="/" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Home</Link>
 
@@ -49,7 +52,7 @@ export default function Navbar() {
 
                 {/* Burger button (mobile) - visible only on small screens */}
                 <button
-                    className="md:hidden ml-auto text-2xl hover:bg-blue-700 active:bg-blue-800 border-2 bg-blue-500  rounded-md p-1"
+                    className="md:hidden ml-auto text-2xl hover:bg-blue-700 active:bg-blue-800 border-2 bg-blue-500 rounded-md p-1"
                     onClick={() => setMenuOpen(!menuOpen)}
                     aria-label="Toggle menu"
                 >

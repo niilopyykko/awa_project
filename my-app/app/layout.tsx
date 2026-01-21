@@ -31,8 +31,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen w-full overflow-x-hidden`}
       >
-        <Navbar></Navbar>
-        {children}
+        <Navbar />
+        <main style={{ paddingTop: '4rem', minHeight: 'calc(100vh - 4rem)' }}>
+          {children}
+        </main>
       </body>
     </html>
   );

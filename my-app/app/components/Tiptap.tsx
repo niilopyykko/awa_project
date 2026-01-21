@@ -3,39 +3,29 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { useEffect } from 'react'
 
+type Props = {
+    content: string
+    onChange: (html: string) => void
+}
 
-
-const Tiptap = () => {
+export default function Tiptap({ content, onChange }: Props) {
     const editor = useEditor({
         extensions: [StarterKit],
-        content: '<p>Text Here</p>',
+        content,
         // Don't render immediately on the server to avoid SSR issues
         immediatelyRender: false,
+        onUpdate: ({ editor }) => {
+            onChange(editor.getHTML())
+        },
     })
 
     useEffect(() => {
         if (!editor) return
-
-        const saved = localStorage.getItem("doc")
-        if (saved) {
-            editor.commands.setContent(saved)
+        if (editor.getHTML() !== content) {
+            editor.commands.setContent(content)
         }
-    }, [editor])
-
-    const save = () => {
-        const content = editor?.getHTML()
-        if (!content) return
-
-        localStorage.setItem("doc", content)
-        alert("Saved")
-    }
+    }, [content, editor])
 
     return (
-        <div>
-            <button onClick={save} className='rounded mb-2 bg-blue-400 '>Save</button>
-            <EditorContent editor={editor} className=' shadow-md m-0 p-0 text-blue-950' />
-        </div>)
-
+        <EditorContent editor={editor} className='m-0 p-0 text-blue-950 drop-shadow-md shadow-blue-950 shadow bg-blue-100' />)
 }
-
-export default Tiptap

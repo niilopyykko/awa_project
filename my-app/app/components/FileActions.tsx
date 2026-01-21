@@ -15,6 +15,10 @@ export default function FileActions({ fileId, fileName }: FileActionsProps) {
         // Delete logic here
         console.log(`Deleting file: ${fileId}`);
     };
+    const handleRename = () => {
+        // rename logic here
+        console.log(`Renaming file: ${fileId}`);
+    };
 
     return (
         <Dropdown>
@@ -23,17 +27,23 @@ export default function FileActions({ fileId, fileName }: FileActionsProps) {
                     Open Menu
                 </Button>
             </DropdownTrigger>
-            <DropdownMenu aria-label="File Actions" className="cursor-pointer">
-                <DropdownItem key="share" onClick={handleShare}>
-                    Share file
+            <DropdownMenu aria-label="File Actions" className="cursor-pointer bg-blue-200 rounded-md text-black">
+                <DropdownItem
+                    key="rename"
+                    className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black"
+                    onClick={handleRename}
+                >Rename
                 </DropdownItem>
+                <DropdownItem key="share" onClick={handleShare} className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black">
+                    Share
+                </DropdownItem >
                 <DropdownItem
                     key="delete"
-                    className="text-danger"
+                    className="text-danger cursor-pointer m-1 px-1 text-center size-auto bg-red-300 rounded-md text-red-950"
                     color="danger"
                     onClick={handleDelete}
                 >
-                    Delete file
+                    Delete
                 </DropdownItem>
             </DropdownMenu>
         </Dropdown>

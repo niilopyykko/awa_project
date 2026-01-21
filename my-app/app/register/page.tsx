@@ -35,7 +35,7 @@ export default function Register() {
     else if (response.status == 500) setUserPrompt("Internal server error")
   }
   return (
-    <div style={{ minHeight: 'calc(100vh - 3.5rem)' }} className="bg-blue-500 w-full flex flex-col items-center justify-center">
+    <div className="w-full min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center">
       <form onSubmit={(e) => { e.preventDefault(); submitRegister(); }} className="bg-amber-50 flex flex-col items-center max-w-md m-0 p-4 space-y-3 rounded-md">
         <input onChange={e => setUsername(e.target.value)} type="username" placeholder="username" className="border-red-600 border-2 m-2 text-black md:text-3xl text-2xl rounded-md" />
         <input onChange={e => setPassword(e.target.value)} type="password" placeholder="password" className="border-red-600 border-2 m-2 text-black md:text-3xl text-2xl rounded-md" />

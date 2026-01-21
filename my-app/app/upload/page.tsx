@@ -79,69 +79,77 @@ export default function Upload() {
   }
 
   return (
-    <>
-      {!jwt ? (
-        <>
-          <p>Please login to see file upload</p>
-          <Link href="/login" className="bg-amber-500 border-2 p-1 m-2 border-amber-50">Log in</Link>
-        </>
-      ) : (
-        <div className="flex flex-col col-auto">
-          <form onSubmit={handleSubmit} className="max-w-2xl">
-            <div className="grid gap-6 mb-6 md:grid-cols-2">
-              <div>
-                <label
-                  htmlFor="file"
-                  className="block mb-2.5 text-sm font-medium text-white">
-                  File
-                </label>
-                <input
-                  type="file"
-                  id="file"
-                  name="file"
-                  className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              </div>
-              <div>
-                <label
-                  htmlFor="editors"
-                  className="block mb-2.5 text-sm font-medium text-white">
-                  Editors
-                </label>
-                <input
-                  type="text"
-                  id="editors"
-                  name="editors"
-                  placeholder="john1, john2, john3"
-                  className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
-                  value={editors}
-                  onChange={(e) => setEditors(e.target.value)} />
-              </div>
+    <div className="p-6">
+      <div className="mx-auto max-w-3xl">
+        {!jwt ? (
+          <div className='flex flex-col bg-fuchsia-300 rounded-md text-center p-2'>
+            <p className="text-gray-600 text-2xl">Please login to see Upload</p>
+            <Link href="/login" className="bg-amber-500 border-2 p-1 m-2 border-amber-50 text-amber-900 text-lg">Log in</Link>
+          </div>
+        ) : (
+          <div className="flex flex-col col-1">
+            <div className="bg-fuchsia-300 rounded-lg shadow-md p-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid gap-6 mb-6 md:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor="file"
+                      className="block mb-2.5 text-sm font-medium text-gray-700">
+                      File
+                    </label>
+                    <input
+                      type="file"
+                      id="file"
+                      name="file"
+                      className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
+                      onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="editors"
+                      className="block mb-2.5 text-sm font-medium text-gray-700">
+                      Editors
+                    </label>
+                    <input
+                      type="text"
+                      id="editors"
+                      name="editors"
+                      placeholder="john1, john2, john3"
+                      className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
+                      value={editors}
+                      onChange={(e) => setEditors(e.target.value)} />
+                  </div>
+                </div>
+                <div className="flex items-start mb-6">
+                  <div className="flex items-center h-5">
+                    <input
+                      type="checkbox"
+                      id="isPublic"
+                      name="isPublic"
+                      className="w-4 h-4 border border-gray-300 rounded accent-blue-500"
+                      checked={isPublic}
+                      onChange={(e) => setIsPublic(e.target.checked)}
+                    />
+                  </div>
+                  <label htmlFor="isPublic" className="ms-2 text-sm font-medium text-gray-900">Is public?</label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button type="submit" className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-md text-sm px-4 py-2.5">Upload</button>
+                  <button type="button" onClick={() => setFile(null)} className="text-sm px-3 py-2 border rounded-md bg-fuchsia-400 hover:bg-fuchsia-700 focus:ring-4 focus:ring-blue-300 text-black">Clear</button>
+                </div>
+              </form>
+              {viewLink && (
+                <div className="mt-4 flex justify-center">
+                  <button
+                    onClick={handleCopy}
+                    className={`border-2 p-2 ${copied ? 'bg-green-500' : 'bg-amber-500'} border-amber-50 m-auto my-2 underline`}>
+                    {copied ? 'Copied!' : viewLink}
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="flex items-start mb-6">
-              <div className="flex items-center h-5">
-                <input
-                  type="checkbox"
-                  id="isPublic"
-                  name="isPublic"
-                  className="w-4 h-4 border border-gray-300 rounded accent-blue-500"
-                  checked={isPublic}
-                  onChange={(e) => setIsPublic(e.target.checked)}
-                />
-              </div>
-              <label htmlFor="isPublic" className="ms-2 text-sm font-medium text-gray-900">Is public?</label>
-            </div>
-            <button type="submit" className="text-white bg-blue-500 hover:bg-blue-600 focus:ring-4 focus:ring-blue-300 font-medium rounded-md text-sm px-4 py-2.5">Upload</button>
-          </form>
-          {viewLink && (
-            <button
-              onClick={handleCopy}
-              className={`border-2 p-2 ${copied ? 'bg-green-500' : 'bg-amber-500'} border-amber-50 m-auto my-2 underline`}>
-              {copied ? 'Copied!' : viewLink}
-            </button>
-          )}
-        </div >)
-      }
-    </>
-  )
+          </div >)
+        }
+      </div>
+    </div>)
 }

@@ -13,16 +13,21 @@ const router: Router = Router()
 router.get("/api/documents", validateToken, async (req: Request, res: Response) => {
     try {
 
+        const userId = (req as CustomRequest).user!.id
+
+        // Return documents where the user is owner, is listed in editors, or the document is public
         const documents: IUserDocument[] | null = await UserDocument.find({
             $or: [
-                { owner: (req as CustomRequest).user!.id },
-                { editors: (req as CustomRequest).user!.id }
+                { owner: userId },
+                { editors: userId },
+                { isVisibleNonAuth: true }
             ]
         }).populate('owner', 'username')
 
         if (!documents) {
             return res.status(404).json({ message: 'No documents found' })
         }
+        
 
         res.status(200).json(documents)
         console.log('Images fetched successfully from database')
@@ -55,24 +60,31 @@ router.post("/api/upload", validateToken, upload.single("file"), async (req: Cus
         console.log("Uploaded file:", req.file)
         console.log("Uploaded body:", req.body)
 
-        if (!req.file) {
-            return res.status(400).json({ message: "No file uploaded" })
+        if (!req.file && !req.body.content) {
+            return res.status(400).json({ message: "No file or text uploaded" })
         }
         let editors: string[] = [] //this handles the editor list conversion from frontend to backend
         if (req.body.editors && req.body.editors.trim()) {
             editors = req.body.editors.split(',').map((e: string) => e.trim())
         } //TODO: Needs to varify the editor user exists and maybe store editors as userIds
 
+        //for naming of files and texts
+        const name =
+            req.body.name?.trim() || //if generated from texteditor
+            req.file?.originalname || //if fileupload
+            'Untitled document' //if left empty
+
         const shareToken = randomUUID()
         const baseUrl = process.env.APP_URL ?? "http://localhost:3000"
 
         const file = new UserDocument({
-            name: req.file.originalname,
+            name: name,
             owner: req.user!.id,
             editors: editors,
             createdAt: new Date(),
             isVisibleNonAuth: req.body.isPublic,
-            filepath: req.file.path,
+            filepath: req.file?.path ?? null, //if fileupload
+            content: req.body.content ?? '', //if generated from texteditor
             readOnlyToken: shareToken,
             readOnlyLink: `${baseUrl}/documents/${shareToken}/readonly`
         })
