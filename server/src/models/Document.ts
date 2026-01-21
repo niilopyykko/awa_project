@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { now, Schema } from "mongoose";
 
 interface IUserDocument extends Document {
     name: string
@@ -12,6 +12,8 @@ interface IUserDocument extends Document {
     filepath: string
     shareToken: string
     readOnlyLink: string
+    lockedBy?: { type: Schema.Types.ObjectId, ref: "User"}
+    lockedAt?: Date
 
 }
 
@@ -24,7 +26,9 @@ const userDocumentSchema = new Schema({
     createdAt: { type: Date},
     filepath: { type: String, default: null},
     shareToken: { type: String },
-    readOnlyLink: { type: String }
+    readOnlyLink: { type: String },
+    lockedBy: { type: Schema.Types.ObjectId, ref: "User"},
+    lockedAt: {type : Date, default: null}
 })
 
 const UserDocument: mongoose.Model<IUserDocument> = mongoose.model<IUserDocument>("userDocument", userDocumentSchema)

@@ -14,6 +14,8 @@ export default function Editor({ driveContent, driveName }: EditorProps) {
     const [jwt, setJwt] = useState<string | null>(null)
     const [content, setContent] = useState(driveContent ?? '<p>Text Content here...</p>')
     const [docName, setDocName] = useState(driveName ?? '')
+    const [isLocked, setIsLocked] = useState<boolean | null>(null)
+    const [lockOwner, setLockOwner] = useState<string | null>(null)
 
     useEffect(() => {
         if (localStorage.getItem("token")) {
@@ -27,6 +29,7 @@ export default function Editor({ driveContent, driveName }: EditorProps) {
         try {
             const fromSession = sessionStorage.getItem('editorContent')
             const fromName = sessionStorage.getItem('editorName')
+            const fromId = sessionStorage.getItem('editorId')
 
             if (fromSession) {
                 // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -34,7 +37,32 @@ export default function Editor({ driveContent, driveName }: EditorProps) {
                 setDocName(() => fromName ?? "")
                 sessionStorage.removeItem('editorContent')
                 sessionStorage.removeItem('editorName')
-
+                // check lock status if we have an id
+                if (fromId) {
+                    ; (async () => {
+                        try {
+                            const token = localStorage.getItem('token')
+                            const resp = await fetch(`http://localhost:3001/api/documents/${fromId}/lock`, {
+                                method: 'GET',
+                                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                            })
+                            if (resp.ok) {
+                                const js = await resp.json()
+                                if (js.locked) {
+                                    setIsLocked(true)
+                                    setLockOwner(js.lockedBy?.username ?? 'another user')
+                                } else {
+                                    setIsLocked(false)
+                                    setLockOwner(null)
+                                }
+                            }
+                        } catch (err) {
+                            console.error('Could not fetch lock status', err)
+                        } finally {
+                            sessionStorage.removeItem('editorId')
+                        }
+                    })()
+                }
             }
         } catch (e) {
             /* ignore if sessionStorage not available */
@@ -168,7 +196,7 @@ export default function Editor({ driveContent, driveName }: EditorProps) {
                                     </div>
                                     <label htmlFor="isPublic" className="ms-2 text-sm font-medium text-gray-900">Is public?</label>
                                 </div>
-                                <button type="submit" className='bg-blue-500 p-2 mt-4 rounded hover:bg-blue-700 active:bg-blue-800'>Save</button>
+                                <button type="submit" disabled={isLocked === true} className='bg-blue-500 p-2 mt-4 rounded hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed'>Save</button>
                             </form>
 
                         </div>

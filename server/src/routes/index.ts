@@ -27,7 +27,7 @@ router.get("/api/documents", validateToken, async (req: Request, res: Response) 
         if (!documents) {
             return res.status(404).json({ message: 'No documents found' })
         }
-        
+
 
         res.status(200).json(documents)
         console.log('Images fetched successfully from database')
@@ -86,7 +86,7 @@ router.post("/api/upload", validateToken, upload.single("file"), async (req: Cus
             filepath: req.file?.path ?? null, //if fileupload
             content: req.body.content ?? '', //if generated from texteditor
             readOnlyToken: shareToken,
-            readOnlyLink: `${baseUrl}/documents/${shareToken}/readonly`
+            readOnlyLink: `${baseUrl}/documents/${shareToken}/readonly`,
         })
         await file.save()
         console.log("File uploaded and saved in the database")
@@ -118,6 +118,53 @@ router.patch("/api/documents/:id", async (req: Request, res: Response) => {
     }
 
 
+})
+
+router.post("/api/documents/:id/lock", validateToken, async (req: CustomRequest, res: Response) => {
+    try {
+        const docId = req.params.id
+        const userId = req.user!.id
+
+        const doc = await UserDocument.findById(docId)
+        if (!doc) return res.status(404).json({ message: "Document not found" })
+
+        // If the document is locked by the same user, toggle unlock
+        if (doc.lockedBy && doc.lockedBy.toString() === userId) {
+            doc.lockedBy = undefined
+            await doc.save()
+            return res.json({ success: true, locked: false })
+        }
+
+        // If locked by another user, indicate conflict
+        if (doc.lockedBy) {
+            return res.status(409).json({ success: false, message: "Locked by another user" })
+        }
+
+        // Otherwise lock it for the requesting user
+        doc.lockedBy = userId
+        await doc.save()
+        return res.json({ success: true, locked: true })
+
+    } catch (err) {
+        console.error(err)
+        return res.status(500).json({ message: "Internal server error" })
+    }
+})
+
+// GET lock status without modifying it
+router.get("/api/documents/:id/lock", validateToken, async (req: CustomRequest, res: Response) => {
+    try {
+        const docId = req.params.id
+        const doc = await UserDocument.findById(docId).populate('lockedBy', 'username')
+        if (!doc) return res.status(404).json({ message: "Document not found" })
+
+        const locked = !!doc.lockedBy
+        const lockedBy = doc.lockedBy ? { id: (doc.lockedBy as any)._id, username: (doc.lockedBy as any).username } : null
+        return res.json({ locked, lockedBy })
+    } catch (err) {
+        console.error(err)
+        return res.status(500).json({ message: "Internal server error" })
+    }
 })
 
 
