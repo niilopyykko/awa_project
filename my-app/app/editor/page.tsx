@@ -8,21 +8,30 @@ type HTMLContent = string
 type EditorProps = { //if editor is opened from drive browser, populate content and filename
     driveContent?: string
     driveName?: string
+    driveEditors?: string
+    driveCommenter?: string
+    driveViewer?: string
+    driveIsPublic?: string
 }
 
-export default function Editor({ driveContent, driveName }: EditorProps) {
+export default function Editor({ driveContent, driveName, driveEditors, driveCommenter, driveViewer }: EditorProps) {
     const [jwt, setJwt] = useState<string | null>(null)
-    const [content, setContent] = useState(driveContent ?? '<p>Text Content here...</p>')
-    const [docName, setDocName] = useState(driveName ?? '')
+    const [content, setContent] = useState<string>(driveContent ?? '<p>Text Content here...</p>')
+    const [docName, setDocName] = useState<string>(driveName ?? '')
+    const [editors, setEditors] = useState<string>(driveEditors ?? '"john1, john2, john3" : ')
+    const [commenter, setCommenter] = useState<string>(driveCommenter ?? '"john1, john2, john3" : ')
+    const [viewer, setViewer] = useState<string>(driveViewer ?? '"john1, john2, john3" : ')
+    const [isPublic, setIsPublic] = useState<boolean>(false)
+
     const [isLocked, setIsLocked] = useState<boolean | null>(null)
     const [lockOwner, setLockOwner] = useState<string | null>(null)
+    const [documentId, setDocumentId] = useState<string | null>(null)
+
 
     useEffect(() => {
-        if (localStorage.getItem("token")) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setJwt(localStorage.getItem("token"))
-        }
-    }, [jwt])
+        // read token once on mount
+        setJwt(localStorage.getItem("token"))
+    }, [])
 
     // If we were navigated here with editor content in sessionStorage, use it
     useEffect(() => {
@@ -30,24 +39,45 @@ export default function Editor({ driveContent, driveName }: EditorProps) {
             const fromSession = sessionStorage.getItem('editorContent')
             const fromName = sessionStorage.getItem('editorName')
             const fromId = sessionStorage.getItem('editorId')
+            const fromEditors = sessionStorage.getItem('editorEditors')
+            const fromCommenter = sessionStorage.getItem('editorCommenter')
+            const fromviewer = sessionStorage.getItem('editorViewer')
+            const fromIsPublic = sessionStorage.getItem('editorIsPublic')
+
+            if (fromIsPublic !== null) {
+                setIsPublic(fromIsPublic === 'true')
+            }
+
+            if (fromId) setDocumentId(fromId)
+
+
 
             if (fromSession) {
-                // eslint-disable-next-line react-hooks/set-state-in-effect
-                setContent(() => fromSession)
-                setDocName(() => fromName ?? "")
+                setContent(fromSession)
+                setDocName(fromName ?? "")
+                setEditors(fromEditors ?? "")
+                setCommenter(fromCommenter ?? "")
+                setViewer(fromviewer ?? "")
+
+                // fromIsPublic already handled above (converted to boolean)
+
                 sessionStorage.removeItem('editorContent')
                 sessionStorage.removeItem('editorName')
+                sessionStorage.removeItem('editorEditors')
+                sessionStorage.removeItem('editorCommenter')
+                sessionStorage.removeItem('editorViewer')
+                sessionStorage.removeItem('editorIsPublic')
                 // check lock status if we have an id
                 if (fromId) {
                     ; (async () => {
                         try {
                             const token = localStorage.getItem('token')
-                            const resp = await fetch(`http://localhost:3001/api/documents/${fromId}/lock`, {
+                            const response = await fetch(`http://localhost:3001/api/documents/${fromId}/lock`, {
                                 method: 'GET',
                                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                             })
-                            if (resp.ok) {
-                                const js = await resp.json()
+                            if (response.ok) {
+                                const js = await response.json()
                                 if (js.locked) {
                                     setIsLocked(true)
                                     setLockOwner(js.lockedBy?.username ?? 'another user')
@@ -70,12 +100,9 @@ export default function Editor({ driveContent, driveName }: EditorProps) {
     }, [])
 
 
-    const [editors, setEditors] = useState<string>("")
-    const [isPublic, setIsPublic] = useState<boolean>(false)
 
 
-    //user copyable viewonly link
-    const [viewLink, setViewLink] = useState<string>("")
+    // user copyable viewonly link (not shown yet)
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
@@ -92,10 +119,15 @@ export default function Editor({ driveContent, driveName }: EditorProps) {
             }
             const formData = new FormData()
             formData.append('editors', editors)
+            formData.append('viewers', viewer)
+            formData.append('commenter', commenter)
             formData.append('isPublic', isPublic.toString())
             formData.append('content', content)
             formData.append('name', docName)
 
+            if (documentId) {
+                formData.append('documentId', documentId)
+            } // send database id back to backend for checking if item already exists in db 
 
             const response = await fetch("http://localhost:3001/api/upload", {
                 method: "POST",
@@ -108,8 +140,7 @@ export default function Editor({ driveContent, driveName }: EditorProps) {
             if (response.ok) {
                 console.log('File uploaded successfully')
                 alert('File uploaded successfully!')
-                const data = await response.json()
-                setViewLink(data.readOnlyLink)
+                await response.json()
 
 
 
@@ -168,21 +199,54 @@ export default function Editor({ driveContent, driveName }: EditorProps) {
                                     className="border p-2 rounded w-full mb-2 text-black"
                                 />
                                 <Tiptap content={content} onChange={(html: HTMLContent) => setContent(html)} />
-                                <div className='mt-4'>
-                                    <label
-                                        htmlFor="editors"
-                                        className="block mb-1 text-sm font-medium text-gray-700">
-                                        Editors
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="editors"
-                                        name="editors"
-                                        placeholder="john1, john2, john3"
-                                        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
-                                        value={editors}
-                                        onChange={(e) => setEditors(e.target.value)} />
+                                <div>
+                                    <div className='mt-4'>
+                                        <label
+                                            htmlFor="viewers"
+                                            className="block mb-1 text-sm font-medium text-gray-700">
+                                            Viewers
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="viewers"
+                                            name="viewers"
+                                            placeholder={viewer}
+                                            className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
+                                            value={viewer}
+                                            onChange={(e) => setViewer(e.target.value)} />
+                                    </div>
+                                    <div className='mt-4'>
+                                        <label
+                                            htmlFor="commenter"
+                                            className="block mb-1 text-sm font-medium text-gray-700">
+                                            Commenter
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="commenter"
+                                            name="commenter"
+                                            placeholder={commenter}
+                                            className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
+                                            value={commenter}
+                                            onChange={(e) => setCommenter(e.target.value)} />
+                                    </div>
+                                    <div className='mt-4'>
+                                        <label
+                                            htmlFor="editors"
+                                            className="block mb-1 text-sm font-medium text-gray-700">
+                                            Editors
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="editors"
+                                            name="editors"
+                                            placeholder={editors}
+                                            className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
+                                            value={editors}
+                                            onChange={(e) => setEditors(e.target.value)} />
+                                    </div>
                                 </div>
+
                                 <div className="flex items-start mb-6">
                                     <div className="flex items-center h-5">
                                         <input

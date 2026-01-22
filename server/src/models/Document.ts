@@ -4,7 +4,7 @@ interface IUserDocument extends Document {
     name: string
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true }
 
-    editors: string[] //list of users with permission to edit
+    editors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] //list of users with permission to edit
     isVisibleNonAuth: boolean  //if document is visible to users that are not logged in
     content: string
     createdAt: Date
@@ -20,7 +20,7 @@ interface IUserDocument extends Document {
 const userDocumentSchema = new Schema({
     name: { type: String, required: true },
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    editors: [{ type: String }],
+    editors: [{ type: Schema.Types.ObjectId, ref: "User"}],
     isVisibleNonAuth: { type: Boolean, default: false },
     content: { type: String, default: null},
     createdAt: { type: Date},

@@ -3,8 +3,14 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from 'next/navigation'
 import Image from "next/image"
-import { Link } from "@heroui/react";
+import { Link, toggle } from "@heroui/react";
 import FileActions from "./components/FileActions";
+import { IoGridOutline } from "react-icons/io5";
+import { FaThList } from "react-icons/fa";
+import { FaSort, FaSortDown, FaSortUp } from "react-icons/fa6";
+
+
+
 
 interface IUser {
   id: string
@@ -18,12 +24,23 @@ interface IDocument {
   createdAt: string
   filepath: string
   content: string
+  editors?: IUser[] //list of users with permission to edit
+  isVisibleNonAuth: boolean
 }
 
 export default function Home() {
   const [documents, setDocuments] = useState<IDocument[]>([])
   const [jwt, setJwt] = useState<string | null>(null)
   const router = useRouter()
+
+
+  const [gridView, setgridView] = useState<boolean>(false)
+  const toggleChange = () => {
+    setgridView(!gridView);
+  };
+  const [sortKey, setSortKey] = useState<'name' | 'created' | 'modified'>('created')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -33,14 +50,19 @@ export default function Home() {
   const getDocuments = useCallback(async (e?: { preventDefault: () => void }) => {
     if (e && e.preventDefault) e.preventDefault()
 
-    if (!jwt) return
-
-    const response = await fetch("http://localhost:3001/api/documents", {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${jwt}`
-      },
-    })
+    const response = await fetch(
+      jwt
+        ? "http://localhost:3001/api/documents"  // auth route
+        : "http://localhost:3001/api/publicDocuments",  // public route
+      {
+        headers: jwt
+          ? {
+            'Authorization': `Bearer ${jwt}`, //auth jwt we have
+            'Content-Type': 'application/json'
+          }
+          : { 'Content-Type': 'application/json' } //no login user
+      }
+    );
 
     const data = await response.json()
 
@@ -52,83 +74,180 @@ export default function Home() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (jwt) getDocuments()
-  }, [getDocuments, jwt])
+    getDocuments();
+  }, [getDocuments])
+
+  const sortedDocuments = [...documents].sort((a, b) => {
+    let valA: string | number = 0
+    let valB: string | number = 0
+
+    switch (sortKey) {
+      case 'name':
+        return sortOrder === 'asc'
+          ? a.name.localeCompare(b.name)
+          : b.name.localeCompare(a.name)
+      case 'created':
+      default:
+        valA = new Date(a.createdAt).getTime()
+        valB = new Date(b.createdAt).getTime()
+        return sortOrder === 'asc' ? valA - valB : valB - valA
+    }
+  })
+
   return (
     <>
-      {!jwt ? (
-        <div className="min-h-[calc(100vh-4rem)] p-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-8 shadow-md">
-              <div className='flex flex-col bg-fuchsia-300 rounded-md text-center p-2'>
-                <p className="text-gray-600 text-2xl">Please login to see Files</p>
-                <Link href="/login" className="bg-amber-500 border-2 p-1 m-2 border-amber-50 text-amber-900 text-lg">Log in</Link>
-              </div>
-            </div>
-          </div>
+      {sortedDocuments.length == 0 ? (<></>) : (<div id="viewToggle" className="flex items-center justify-end gap-4 p-4 md:p-4 lg:p-8 text-2xl md:text-3xl">
+        <div className="flex items-center gap-2">
+          <label className="text-base">Sort:</label>
+          <select value={sortKey} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortKey(e.target.value as 'name' | 'created' | 'modified')} className="text-base p-1 rounded-2xl bg-fuchsia-500 text-black">
+            <option value="name">Name</option>
+            <option value="created">Created</option>
+            <option value="modified">Modified (WIP)</option>
+          </select>
+          <button onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')} className="px-2">{sortOrder === 'asc' ? <FaSortUp /> : <FaSortDown />}</button>
         </div>
-      ) : (
-        <div className="flex flex-col col-3">
-          {documents.length === 0 ?
-            <button onClick={getDocuments} className="border-amber-400 border-4 bg-amber-900 p-2 my-4 mx-auto rounded-2xl">Fetch Documents</button>
-            :
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-              {documents.map((doc) => {
-                const filepath = doc.filepath ?? ''
-                const filename = filepath ? (filepath.split('/').pop() || filepath.split('\\').pop() || '') : ''
-                const fileUrl = filename ? `http://localhost:3001/uploads/${filename}` : ''
-                const ext = (filename || '').split('.').pop()?.toLowerCase() || ''
-                const isImage = ['png', 'jpg', 'jpeg', 'webp', 'avif'].includes(ext)
-                const isGif = ext === 'gif'
-                const isVideo = ['mp4', 'webm', 'ogg'].includes(ext)
+        <button onClick={toggleChange}>
+          {gridView ? (<FaThList />) : (<IoGridOutline />)}
+        </button>
+      </div>)}
+      {!gridView ? (
+        <div className="p-4">
+          <div className="flex flex-col gap-2">
+            {sortedDocuments.map(doc => {
+              const filepath = doc.filepath ?? ''
+              const filename = filepath ? (filepath.split('/').pop() || filepath.split('\\').pop() || '') : ''
+              const fileUrl = filename ? `http://localhost:3001/uploads/${filename}` : ''
+              const ext = (filename || '').split('.').pop()?.toLowerCase() || ''
+              const isImage = ['png', 'jpg', 'jpeg', 'webp', 'avif'].includes(ext)
+              const isGif = ext === 'gif'
+              const isVideo = ['mp4', 'webm', 'ogg'].includes(ext)
 
-                //"removes" html tags from content
-                const renderPlainText = (html: string) => {
-                  const div = document.createElement('div')
-                  div.innerHTML = html
-                  return div.textContent || ''
-                }
-                return (
+              const renderPlainText = (html: string) => {
+                const div = document.createElement('div')
+                div.innerHTML = html
+                return div.textContent || ''
+              }
 
-                  <div onClick={() => {
-                    // if there's no uploaded file but there is editor content, open editor with that content
-                    if (!filename && doc.content) {
-                      try {
-                        sessionStorage.setItem('editorContent', doc.content)
-                        sessionStorage.setItem('editorName', doc.name)
-                        sessionStorage.setItem('editorId', doc._id)
-                        router.push('/editor')
-                      } catch (e) {
-                        console.error('Could not open editor with content', e)
-                      }
-                    }
-                  }}
-                    key={doc._id}
-                    className="bg-amber-800 border-amber-200 border-4 flex rounded-sm flex-col p-4 hover:bg-violet-600 focus:outline-2 focus:outline-offset-2 focus:outline-violet-500 active:bg-violet-700 relative cursor-pointer">
-                    <div className="absolute top-2 right-2">
-                      <FileActions fileId={doc._id} fileName={doc.name} />
-                    </div>
-                    <h1 className="font-bold">Filename: {doc.name}</h1>
-                    <h2>Uploaded by: {doc.owner.username}</h2>
-                    <h3>{new Date(doc.createdAt).toLocaleDateString()}</h3>
-                    <div className="mt-2 w-full h-60 flex items-center justify-center overflow-hidden rounded-2xl bg-amber-900  shadow-2xl">
+              return (
+                <div key={doc._id} className="flex items-center gap-4 p-4 bg-amber-800 border-amber-200 border-2 rounded">
+                  <div className="flex-1">
+                    <h3 className="font-bold">{doc.name}</h3>
+                    <div className="text-sm">Uploaded by: {doc.owner.username} - {new Date(doc.createdAt).toLocaleString()}</div>
+                    <div className="mt-2">
                       {filename ? (
                         isVideo ? (
-                          <video src={fileUrl} controls className="object-contain w-full h-full" />
+                          <video src={fileUrl} controls className="max-h-40" />
                         ) : isGif || isImage ? (
-                          <Image src={fileUrl} alt={doc.name} width={800} height={450} unoptimized className="object-contain w-full h-full" />
+                          <Image src={fileUrl} alt={doc.name} width={400} height={200} unoptimized className="object-contain" />
                         ) : (
                           <a href={fileUrl} target="_blank" rel="noreferrer" className="underline">Download</a>
                         )
                       ) : (
-                        <p>{renderPlainText(doc.content)}</p>
+                        <div
+                          onClick={() => {
+                            if (!filename && doc.content) {
+                              try {
+                                sessionStorage.setItem('editorContent', doc.content)
+                                sessionStorage.setItem('editorName', doc.name)
+                                sessionStorage.setItem('editorId', doc._id)
+                                sessionStorage.setItem(
+                                  'editorEditors',
+                                  (doc.editors?.map((e: IUser) => e.username) ?? []).join(', ')
+                                )
+                                sessionStorage.setItem('editorIsPublic', String(doc.isVisibleNonAuth))
+                                router.push('/editor')
+                              } catch (err) {
+                                console.error('Could not open editor with content', err)
+                              }
+                            }
+                          }}
+                          className="mt-2 w-full h-40 flex items-center justify-center overflow-hidden rounded-2xl bg-amber-900 shadow-2xl p-2 cursor-pointer"
+                        >
+                          <p>{renderPlainText(doc.content)}</p>
+                        </div>
                       )}
                     </div>
                   </div>
-                )
-              })}
-            </div>
-          }
+                  <div className="flex-none">
+                    <FileActions fileId={doc._id} fileName={doc.name} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+          {sortedDocuments.map((doc) => {
+            const filepath = doc.filepath ?? ''
+            const filename = filepath
+              ? filepath.split('/').pop() || filepath.split('\\').pop() || ''
+              : ''
+            const fileUrl = filename ? `http://localhost:3001/uploads/${filename}` : ''
+            const ext = (filename || '').split('.').pop()?.toLowerCase() || ''
+            const isImage = ['png', 'jpg', 'jpeg', 'webp', 'avif'].includes(ext)
+            const isGif = ext === 'gif'
+            const isVideo = ['mp4', 'webm', 'ogg'].includes(ext)
+
+            const renderPlainText = (html: string) => {
+              const div = document.createElement('div')
+              div.innerHTML = html
+              return div.textContent || ''
+            }
+
+            return (
+              <div
+                key={doc._id}
+                onClick={() => {
+                  if (!filename && doc.content) {
+                    try {
+                      sessionStorage.setItem('editorContent', doc.content)
+                      sessionStorage.setItem('editorName', doc.name)
+                      sessionStorage.setItem('editorId', doc._id)
+                      sessionStorage.setItem(
+                        'editorEditors',
+                        (doc.editors?.map((e: IUser) => e.username) ?? []).join(', ')
+                      )
+                      sessionStorage.setItem('editorIsPublic', String(doc.isVisibleNonAuth))
+                      router.push('/editor')
+                    } catch (e) {
+                      console.error('Could not open editor with content', e)
+                    }
+                  }
+                }}
+                className="bg-amber-800 border-amber-200 border-4 flex rounded-sm flex-col p-4 hover:bg-violet-600 focus:outline-2 focus:outline-offset-2 focus:outline-violet-500 active:bg-violet-700 relative cursor-pointer"
+              >
+                <div className="absolute top-2 right-2">
+                  <FileActions fileId={doc._id} fileName={doc.name} />
+                </div>
+                <h1 className="font-bold">Filename: {doc.name}</h1>
+                <h2>Uploaded by: {doc.owner.username}</h2>
+                <h3>{new Date(doc.createdAt).toLocaleString()}</h3>
+                <div className="mt-2 w-full h-60 flex items-center justify-center overflow-hidden rounded-2xl bg-amber-900 shadow-2xl">
+                  {filename ? (
+                    isVideo ? (
+                      <video src={fileUrl} controls className="object-contain w-full h-full" />
+                    ) : isGif || isImage ? (
+                      <Image
+                        src={fileUrl}
+                        alt={doc.name}
+                        width={800}
+                        height={450}
+                        unoptimized
+                        className="object-contain w-full h-full"
+                      />
+                    ) : (
+                      <a href={fileUrl} target="_blank" rel="noreferrer" className="underline">
+                        Download
+                      </a>
+                    )
+                  ) : (
+                    <p>{renderPlainText(doc.content)}</p>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </>

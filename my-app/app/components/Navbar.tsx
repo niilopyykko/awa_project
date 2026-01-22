@@ -7,19 +7,24 @@ import { useState, useEffect } from 'react'
 export default function Navbar() {
 
     const [token, setToken] = useState<string | null>(null)
+    const [user, setUser] = useState<string | null>(null)
     const [menuOpen, setMenuOpen] = useState(false)
 
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setToken(localStorage.getItem('token'))
+        setUser(localStorage.getItem('user'))
 
     }, [])
 
     const logout = () => {
         localStorage.removeItem('token')
         setToken(null)
+        localStorage.removeItem('user')
+        setUser(null)
         location.reload();
+
     }
 
 
@@ -41,13 +46,16 @@ export default function Navbar() {
                     {!token && <Link href="/register" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Register</Link>}
 
                     {token && (
-                        <button
-                            onClick={logout}
-                            className="bg-red-500 p-2 rounded hover:bg-red-600 hover:cursor-pointer"
-                        >
-                            Log out
-                        </button>
-                    )}
+                        <>
+                            <span className="text-sm">
+                                Logged in as <span className="font-semibold">{user}</span>
+                            </span>                            <button
+                                onClick={logout}
+                                className="bg-red-500 p-2 rounded hover:bg-red-600 hover:cursor-pointer"
+                            >
+                                Log out
+                            </button>
+                        </>)}
                 </div>
 
                 {/* Burger button (mobile) - visible only on small screens */}
@@ -81,13 +89,19 @@ export default function Navbar() {
                         </Link>
                     )}
 
-                    {token && (
-                        <button
+                    {token && (<>
+                        <div className="flex items-center gap-3 bg-blue-500 px-3 py-1 rounded-full shadow">
+                            <span className="text-sm">
+                                Logged in as <span className="font-semibold">{user}</span>
+                            </span>
+                        </div>                        <button
                             onClick={() => { logout(); setMenuOpen(false); }}
                             className="bg-red-500 px-2 py-1 rounded hover:bg-red-600 text-left"
                         >
                             Log out
                         </button>
+                    </>
+
                     )}
                 </div>
             )}
