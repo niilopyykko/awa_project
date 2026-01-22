@@ -7,18 +7,24 @@ import { useState, useEffect } from 'react'
 export default function Navbar() {
 
     const [token, setToken] = useState<string | null>(null)
+    const [user, setUser] = useState<string | null>(null)
     const [menuOpen, setMenuOpen] = useState(false)
 
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setToken(localStorage.getItem('token'))
+        setUser(localStorage.getItem('user'))
+
 
     }, [])
 
     const logout = () => {
         localStorage.removeItem('token')
         setToken(null)
+        localStorage.removeItem('user')
+        setUser(null)
+
         location.reload();
     }
 
@@ -40,13 +46,16 @@ export default function Navbar() {
                     {!token && <Link href="/login" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Log in</Link>}
                     {!token && <Link href="/register" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Register</Link>}
 
-                    {token && (
+                    {token && (<>
+                        <p className='bg-blue-400 rounded-sm p-1 text-black'>Logged in as <span className='text-blue-950'>{user}</span></p>
                         <button
                             onClick={logout}
                             className="bg-red-500 p-2 rounded hover:bg-red-600 hover:cursor-pointer"
                         >
                             Log out
                         </button>
+                    </>
+
                     )}
                 </div>
 
@@ -82,12 +91,16 @@ export default function Navbar() {
                     )}
 
                     {token && (
-                        <button
-                            onClick={() => { logout(); setMenuOpen(false); }}
-                            className="bg-red-500 px-2 py-1 rounded hover:bg-red-600 text-left"
-                        >
-                            Log out
-                        </button>
+                        <>
+                            <p className='bg-blue-400 rounded-sm p-1 text-black'>Logged in as <span className='text-blue-950'>{user}</span></p>
+                            <button
+                                onClick={() => { logout(); setMenuOpen(false); }}
+                                className="bg-red-500 px-2 py-1 rounded hover:bg-red-600 text-left"
+                            >
+                                Log out
+                            </button>
+                        </>
+
                     )}
                 </div>
             )}

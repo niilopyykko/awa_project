@@ -8,14 +8,21 @@ type HTMLContent = string
 type EditorProps = { //if editor is opened from drive browser, populate content and filename
     driveContent?: string
     driveName?: string
+    driveEditors?: string
+    driveIsPublic?: boolean
 }
 
-export default function Editor({ driveContent, driveName }: EditorProps) {
+export default function Editor({ driveContent, driveName, driveEditors, driveIsPublic }: EditorProps) {
     const [jwt, setJwt] = useState<string | null>(null)
-    const [content, setContent] = useState(driveContent ?? '<p>Text Content here...</p>')
-    const [docName, setDocName] = useState(driveName ?? '')
+    const [content, setContent] = useState<string>(driveContent ?? '<p>Text Content here...</p>')
+    const [docName, setDocName] = useState<string>(driveName ?? '')
+    const [editors, setEditors] = useState<string>(driveEditors ?? '"john1, john2, john3" : ')
+    const [isPublic, setIsPublic] = useState<boolean>(driveIsPublic ?? false)
+
     const [isLocked, setIsLocked] = useState<boolean | null>(null)
     const [lockOwner, setLockOwner] = useState<string | null>(null)
+    const [documentId, setDocumentId] = useState<string | null>(null)
+
 
     useEffect(() => {
         if (localStorage.getItem("token")) {
@@ -30,6 +37,11 @@ export default function Editor({ driveContent, driveName }: EditorProps) {
             const fromSession = sessionStorage.getItem('editorContent')
             const fromName = sessionStorage.getItem('editorName')
             const fromId = sessionStorage.getItem('editorId')
+            //TODO add editors and public tickbox placeholder toggles
+
+            if (fromId) setDocumentId(fromId)
+
+
 
             if (fromSession) {
                 // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -70,8 +82,6 @@ export default function Editor({ driveContent, driveName }: EditorProps) {
     }, [])
 
 
-    const [editors, setEditors] = useState<string>("")
-    const [isPublic, setIsPublic] = useState<boolean>(false)
 
 
     //user copyable viewonly link
@@ -96,6 +106,9 @@ export default function Editor({ driveContent, driveName }: EditorProps) {
             formData.append('content', content)
             formData.append('name', docName)
 
+            if (documentId) {
+                formData.append('documentId', documentId)
+            } // send database id back to backend for checking if item already exists in db 
 
             const response = await fetch("http://localhost:3001/api/upload", {
                 method: "POST",
@@ -178,7 +191,7 @@ export default function Editor({ driveContent, driveName }: EditorProps) {
                                         type="text"
                                         id="editors"
                                         name="editors"
-                                        placeholder="john1, john2, john3"
+                                        placeholder={editors}
                                         className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
                                         value={editors}
                                         onChange={(e) => setEditors(e.target.value)} />

@@ -33,6 +33,7 @@ export default function Login() {
 
       if (data.token) {
         localStorage.setItem("token", data.token)
+        localStorage.setItem("user", username)
         setUserPrompt("login successfull, forwarding to frontpage page in 3 seconds")
         setTimeout(() => {
           window.location.href = "/"

@@ -60,27 +60,53 @@ router.post("/api/upload", validateToken, upload.single("file"), async (req: Cus
         console.log("Uploaded file:", req.file)
         console.log("Uploaded body:", req.body)
 
+        let { name, content, isPublic, editors, documentId } = req.body
+
+
         if (!req.file && !req.body.content) {
             return res.status(400).json({ message: "No file or text uploaded" })
         }
-        let editors: string[] = [] //this handles the editor list conversion from frontend to backend
+        let editorsArray: string[] = [] //this handles the editor list conversion from frontend to backend
         if (req.body.editors && req.body.editors.trim()) {
-            editors = req.body.editors.split(',').map((e: string) => e.trim())
+            editorsArray = req.body.editors.split(',').map((e: string) => e.trim())
         } //TODO: Needs to varify the editor user exists and maybe store editors as userIds
 
         //for naming of files and texts
-        const name =
+        name =
             req.body.name?.trim() || //if generated from texteditor
             req.file?.originalname || //if fileupload
             'Untitled document' //if left empty
 
-        const shareToken = randomUUID()
         const baseUrl = process.env.APP_URL ?? "http://localhost:3000"
 
-        const file = new UserDocument({
+
+        //Update existing file
+        if (documentId) {
+      const updatedDoc = await UserDocument.findOneAndUpdate(
+        { _id: documentId, $or: [ {owner: req.user!.id}, {editors: req.user!.id}] },
+        { 
+          $set: {
+            name: name || 'Untitled',
+            content: content || '',
+            isVisibleNonAuth: isPublic === 'true',
+            editors: editorsArray
+          }
+        },
+        { new: true }
+      )
+
+      if (!updatedDoc) return res.status(404).json({ message: "Document not found or you are not the owner" })
+
+      return res.json({ message: "Document updated", document: updatedDoc })
+    }
+
+        //New file
+        const shareToken = randomUUID()
+
+        const doc = new UserDocument({
             name: name,
             owner: req.user!.id,
-            editors: editors,
+            editors: editorsArray,
             createdAt: new Date(),
             isVisibleNonAuth: req.body.isPublic,
             filepath: req.file?.path ?? null, //if fileupload
@@ -88,16 +114,17 @@ router.post("/api/upload", validateToken, upload.single("file"), async (req: Cus
             readOnlyToken: shareToken,
             readOnlyLink: `${baseUrl}/documents/${shareToken}/readonly`,
         })
-        await file.save()
+
+        await doc.save()
+
         console.log("File uploaded and saved in the database")
         return res.status(201).json({
-            message: "File uploaded and saved in the database", readOnlyLink: file.readOnlyLink
+            message: "File uploaded and saved in the database", readOnlyLink: doc.readOnlyLink
         })
-    } catch (error: any) {
-        console.error(`Error while uploading file: ${error}`)
-        return res.status(500).json({ message: 'Internal server error' })
-    }
-
+        } catch (error: any) {
+            console.error(`Error while uploading file: ${error}`)
+            return res.status(500).json({ message: 'Internal server error' })
+        }
 })
 
 router.patch("/api/documents/:id", async (req: Request, res: Response) => {
@@ -169,3 +196,23 @@ router.get("/api/documents/:id/lock", validateToken, async (req: CustomRequest, 
 
 
 export default router
+
+// Public documents endpoint (no auth required)
+router.get("/api/documents/public", async (req: Request, res: Response) => {
+    try {
+        const documents: IUserDocument[] | null = await UserDocument.find({
+            isVisibleNonAuth: true
+        }).populate('owner', 'username')
+
+        if (!documents) {
+            return res.status(404).json({ message: 'No public documents found' })
+        }
+
+        res.status(200).json(documents)
+        console.log('Public documents fetched successfully from database')
+    } catch (error: any) {
+        console.error(`Error while fetching public documents: ${error}`)
+        return res.status(500).json({ message: 'Internal server error' })
+    }
+
+})

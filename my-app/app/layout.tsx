@@ -29,7 +29,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width,initial-scale=1" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen w-full overflow-x-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen w-full overflow-hidden`}
       >
         <Navbar />
         <main style={{ paddingTop: '4rem', minHeight: 'calc(100vh - 4rem)' }}>
