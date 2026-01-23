@@ -26,6 +26,7 @@ interface IDocument {
   content: string
   editors?: IUser[] //list of users with permission to edit
   isVisibleNonAuth: boolean
+  trash: boolean
 }
 
 export default function Home() {
@@ -129,7 +130,7 @@ export default function Home() {
               }
 
               return (
-                <div key={doc._id} className="flex items-center gap-4 p-4 bg-amber-800 border-amber-200 border-2 rounded">
+                <div key={doc._id} className="relative flex items-center gap-4 p-4 bg-amber-800 border-amber-200 border-2 rounded">
                   <div className="flex-1">
                     <h3 className="font-bold">{doc.name}</h3>
                     <div className="text-sm">Uploaded by: {doc.owner.username} - {new Date(doc.createdAt).toLocaleString()}</div>
@@ -168,7 +169,7 @@ export default function Home() {
                       )}
                     </div>
                   </div>
-                  <div className="flex-none">
+                  <div className="absolute top-2 right-2">
                     <FileActions fileId={doc._id} fileName={doc.name} />
                   </div>
                 </div>

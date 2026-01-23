@@ -14,6 +14,7 @@ interface IUserDocument extends Document {
     readOnlyLink: string
     lockedBy?: { type: Schema.Types.ObjectId, ref: "User"}
     lockedAt?: Date
+    trash: Boolean
 
 }
 
@@ -28,7 +29,8 @@ const userDocumentSchema = new Schema({
     shareToken: { type: String },
     readOnlyLink: { type: String },
     lockedBy: { type: Schema.Types.ObjectId, ref: "User"},
-    lockedAt: {type : Date, default: null}
+    lockedAt: {type : Date, default: null},
+    trash: {type: Boolean, default: false}
 })
 
 const UserDocument: mongoose.Model<IUserDocument> = mongoose.model<IUserDocument>("userDocument", userDocumentSchema)
