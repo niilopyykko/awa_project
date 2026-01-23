@@ -4,7 +4,8 @@
   "main": "server.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "tsc-watch --onSuccess \"nodemon dist/server.js\""
+    "start": "tsc-watch --onSuccess \"nodemon dist/server.js\"",
+    "dev": "ts-node-dev --respawn --transpile-only server.ts"
   },
   "author": "",
   "license": "ISC",
@@ -12,26 +13,27 @@
   "dependencies": {
     "@editorjs/editorjs": "^2.31.1",
     "bcrypt": "^6.0.0",
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "crypto-js": "^4.2.0",
-    "dotenv": "^16.4.5",
-    "express": "^4.22.1",
-    "express-validator": "^7.2.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.7.0",
-    "morgan": "^1.10.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "express-validator": "^7.3.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.1.5",
+    "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "nodemon": "^3.1.11",
     "path": "^0.12.7",
-    "sass": "^1.97.2"
+    "sass": "^1.97.3"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
+    "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
-    "@types/express": "^4.17.21",
-    "@types/jsonwebtoken": "^9.0.7",
-    "@types/morgan": "^1.9.9",
-    "@types/multer": "^1.4.12",
-    "tsc-watch": "^6.3.1"
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/multer": "^2.0.0",
+    "tsc-watch": "^7.2.0",
+    "ts-node-dev": "^2.0.0"
   }
 }

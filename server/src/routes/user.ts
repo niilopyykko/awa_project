@@ -8,8 +8,9 @@ import { validateToken } from '../middleware/validateToken'
 const router: Router = Router()
 
 router.post("/register",
-    body("username").trim().escape(),
-    body("password").escape(),
+    body("username").trim().isLength({min: 3}).escape().withMessage("Username too short"),
+    body("password").isLength({min: 5}).withMessage("Password too short").matches(/[0-9]/).withMessage("Password must contain a number"),
+//SHOULD HAVE USED .isStrongPassword
     async (req: Request, res: Response) => {
         const errors: Result<ValidationError> = validationResult(req)
 
@@ -45,7 +46,7 @@ router.post("/register",
 
 router.post("/login",
     body("username").trim().escape(),
-    body("password").escape(),
+    body("password"),
     async (req: Request, res: Response) => {
         try {
             const user: IUser | null = await User.findOne({ username: req.body.username })

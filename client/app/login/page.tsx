@@ -1,0 +1,64 @@
+'use client'
+import { useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+
+export default function Login() {
+  const router = useRouter()
+  const [userPrompt, setUserPrompt] = useState<string>('')
+  const [username, setUsername] = useState<string>('')
+  const [password, setPassword] = useState<string>('')
+
+
+  const fetchData = async (username: string, password: string) => {
+    try {
+      const response = await fetch("http://localhost:3001/user/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username: username,
+          password: password
+        })
+      })
+      const data = await response.json()
+      console.log(response.status, data)
+
+      if (!response.ok) {
+        if (response.status === 401) { setUserPrompt("Login failed, wrong password or user doesn't exist") }
+        else if (response.status === 400) { setUserPrompt("error") }
+        else if (response.status === 500) { setUserPrompt("Internal server error") }
+        else throw new Error("Error fetching data")
+      }
+
+      if (data.token) {
+        localStorage.setItem("token", data.token)
+        localStorage.setItem("user", username)
+        router.push("/")
+
+      }
+
+
+    } catch (error) {
+      if (error instanceof Error) {
+        console.log(`Error when trying to login: ${error.message}`)
+      }
+    }
+    console.log(userPrompt)
+  }
+
+  return (
+    <div className="w-full min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center">
+      <form onSubmit={(e) => { e.preventDefault(); fetchData(username, password); }} className="bg-amber-50 flex flex-col items-center max-w-md m-0 p-4 space-y-3 rounded-md">
+        <input type="text" placeholder="username" onChange={(e) => setUsername(e.target.value)}
+          className="border-red-600 border-2 m-2 text-black md:text-3xl text-2xl rounded-md" />
+        <input type="password" placeholder="password" onChange={(e) => setPassword(e.target.value)}
+          className="border-red-600 border-2 m-2 text-black md:text-3xl text-2xl rounded-md" />
+        <button type="submit" className="bg-red-800 text-yellow-600 m-2 border-2 text-2xl px-2 rounded-md hover:bg-amber-600 hover:text-black active:bg-red-600">Log in</button>
+        <Link href="/register" className="text-blue-600 text-md m-2 underline">Not registered? Sign up</Link>
+      </form>
+      {!userPrompt ? (<></>) : (<p className="max-w-md mx-auto border-2 border-blue-200 p-2 m-4 text-center rounded bg-white text-black">{userPrompt}</p>)}
+    </div >
+  )
+}
