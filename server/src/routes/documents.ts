@@ -88,7 +88,8 @@ router.post(
             const editorIds = editorUsers.map(u => u._id)
 
 
-            const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
+            const serverPort = process.env.PORT ?? '3001';
+            const serverBase = process.env.SERVER_URL ?? process.env.APP_URL ?? `http://localhost:${serverPort}`;
 
             // If documentId provided, attempt to update (owner or editor)
             if (documentId) {
@@ -129,7 +130,7 @@ router.post(
                 editors: editorIds,
                 filepath: req.file?.path ?? null,
                 shareToken: shareToken,
-                readOnlyLink: `${baseUrl}/documents/${shareToken}/readonly`,
+                readOnlyLink: `${serverBase}/documents/${shareToken}/readonly`,
                 createdAt: new Date(),
             });
 
@@ -455,7 +456,12 @@ router.get(
             const basename = doc.filepath ? path.basename(String(doc.filepath)) : null;
             const fileUrl = basename ? `${req.protocol}://${req.get('host')}/uploads/${basename}` : null;
 
-            return res.json({ document: doc, permissions, fileUrl });
+            // Ensure readOnlyLink points to this server's public readonly route (in case stored value is stale)
+            const serverPort = process.env.PORT ?? '3001';
+            const serverBase = process.env.SERVER_URL ?? process.env.APP_URL ?? `${req.protocol}://${req.get('host')}`;
+            const readOnlyLink = doc.shareToken ? `${serverBase}/documents/${doc.shareToken}/readonly` : (doc.readOnlyLink || null);
+
+            return res.json({ document: doc, permissions, fileUrl, readOnlyLink });
         } catch (err) {
             console.error(err);
             return res.status(500).json({ message: 'Internal server error' });

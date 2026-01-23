@@ -1,5 +1,5 @@
 "use client";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button, Alert } from "@heroui/react";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@heroui/react";
 import { useRouter } from "next/navigation";
 
 interface FileActionsProps {
@@ -9,7 +9,7 @@ interface FileActionsProps {
     fileOwner?: string
     currentUsername?: string
     editors?: string[]
-    onUpdated?: () => void
+    onUpdated?: (opts?: { switchToDrive?: boolean }) => void
 }
 
 export default function FileActions({ fileId, fileName, isTrashed = false, fileOwner, currentUsername, editors = [], onUpdated }: FileActionsProps) {
@@ -21,14 +21,15 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
     const isEditor = Array.isArray(editors) && editors.map(String).includes(String(currentUsername));
     if (!isOwner && !isEditor) return null;
 
-    const api = async (path: string, method = 'POST') => {
+    const api = async (path: string, method = 'POST', callOnUpdated = true) => {
         try {
             const res = await fetch(path, {
                 method,
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-            router.refresh();
+            if (callOnUpdated && onUpdated) onUpdated();
+            try { router.refresh(); } catch { }
         } catch (err) {
             console.error(err);
             alert('Action failed. See console for details.');
@@ -37,17 +38,21 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
     // here we use web browser confirmation so no files are accidentally deleted
     const handleTrash = () => {
         if (!confirm(`Move "${fileName}" to trash?`)) return;
-        api(`http://localhost:3001/api/documents/${fileId}/trash`, 'POST');
+        api(`http://localhost:3001/api/documents/${fileId}/trash`, 'POST', true);
     };
 
     const handleRestore = () => {
         if (!confirm(`Restore "${fileName}" from trash?`)) return;
-        api(`http://localhost:3001/api/documents/${fileId}/restore`, 'POST');
+        api(`http://localhost:3001/api/documents/${fileId}/restore`, 'POST', true);
+        // Ask parent to switch back to Drive view after restoring
+        if (onUpdated) onUpdated({ switchToDrive: true });
     };
 
     const handleDeletePermanent = () => {
         if (!confirm(`Permanently delete "${fileName}"? This cannot be undone.`)) return;
-        api(`http://localhost:3001/api/documents/${fileId}`, 'DELETE');
+        api(`http://localhost:3001/api/documents/${fileId}`, 'DELETE', true);
+        // Request parent switch back to Drive; if trash becomes empty, UI will reflect it
+        if (onUpdated) onUpdated({ switchToDrive: true });
     };
 
     const handleRename = () => {
@@ -111,7 +116,7 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
             });
             if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
             const data = await res.json();
-            const link = data?.document?.readOnlyLink || '';
+            const link = data?.readOnlyLink || data?.document?.readOnlyLink || '';
             if (link) {
                 try {
                     await navigator.clipboard.writeText(link);
