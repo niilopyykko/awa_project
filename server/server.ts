@@ -1,6 +1,7 @@
 import express, { Express } from "express"
 import path from "path"
 import router from "./src/routes/index"
+import documentsRouter from "./src/routes/documents"
 import userRouter from "./src/routes/user"
 import morgan from "morgan"
 import mongoose, { Connection } from 'mongoose'
@@ -36,6 +37,7 @@ app.use(morgan("dev"))
 
 app.use(express.static(path.join(__dirname, "../public")))
 app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")))
+app.use("/api", documentsRouter)
 app.use("/", router)
 app.use("/user", userRouter)
 
