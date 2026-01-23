@@ -1,25 +1,22 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { IDocument } from "../../src/types";
+import { useAuth } from "../context/AuthContext";
+
 
 export default function useDocuments() {
+    const { token, user } = useAuth()
   const [documents, setDocuments] = useState<IDocument[]>([]);
-  const [jwt, setJwt] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setJwt(localStorage.getItem("token"));
-    setCurrentUser(localStorage.getItem("user"));
-  }, []);
+
 
   const getDocuments = useCallback(async () => {
     try {
       const response = await fetch(
-        jwt ? "http://localhost:3001/api/documents" : "http://localhost:3001/api/publicDocuments",
+        token ? "http://localhost:3001/api/documents" : "http://localhost:3001/api/publicDocuments",
         {
-          headers: jwt
-            ? { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" }
+          headers: token
+            ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
             : { "Content-Type": "application/json" },
         },
       );
@@ -37,7 +34,7 @@ export default function useDocuments() {
       console.error('Error while fetching documents', err);
       setDocuments([]);
     }
-  }, [jwt]);
+  }, [token]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -46,5 +43,5 @@ export default function useDocuments() {
 
   const refresh = () => getDocuments();
 
-    return { documents, jwt, currentUser, getDocuments, refresh };
+    return { documents, token, user, getDocuments, refresh };
 }

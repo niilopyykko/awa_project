@@ -2,31 +2,13 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
+
 
 
 export default function Navbar() {
-
-    const [token, setToken] = useState<string | null>(null)
-    const [user, setUser] = useState<string | null>(null)
+    const { token, user, logout } = useAuth() //Must have if we want login and logout to refresh navbar and drivepage
     const [menuOpen, setMenuOpen] = useState(false)
-
-
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setToken(localStorage.getItem('token'))
-        setUser(localStorage.getItem('user'))
-
-    }, [])
-
-    const logout = () => {
-        localStorage.removeItem('token')
-        setToken(null)
-        localStorage.removeItem('user')
-        setUser(null)
-        location.reload();
-
-    }
-
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white h-16">
@@ -94,7 +76,8 @@ export default function Navbar() {
                             <span className="text-sm">
                                 Logged in as <span className="font-semibold">{user}</span>
                             </span>
-                        </div>                        <button
+                        </div>
+                        <button
                             onClick={() => { logout(); setMenuOpen(false); }}
                             className="bg-red-500 px-2 py-1 rounded hover:bg-red-600 text-left"
                         >

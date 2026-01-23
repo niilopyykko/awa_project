@@ -1,6 +1,7 @@
 "use client"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useAuth } from "../context/AuthContext"
 
 interface errors {
   location: string,
@@ -12,7 +13,7 @@ interface errors {
 
 export default function Register() {
   const router = useRouter()
-
+  const { login } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [userPrompt, setUserPrompt] = useState<string | string[]>('')
@@ -43,9 +44,8 @@ export default function Register() {
       const loginData = await loginResponse.json()
 
       if (loginResponse.ok) {
-        localStorage.setItem("token", loginData.token)
-        localStorage.setItem("user", username)
-
+        login(loginData.token, username)
+        router.push("/")
         router.push("/")
       } else {
         setUserPrompt("Registered, but auto-login failed")

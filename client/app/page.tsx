@@ -7,7 +7,8 @@ import DocumentGrid from "./components/DocumentGrid";
 import useDocuments from "./hooks/useDocuments";
 
 export default function Home() {
-  const { documents, jwt, currentUser, refresh } = useDocuments();
+
+  const { documents, token, user, refresh } = useDocuments();
   const [gridView, setGridView] = useState<boolean>(false);
   const [showTrash, setShowTrash] = useState<boolean>(false);
   const [sortKey, setSortKey] = useState<'name' | 'created' | 'modified'>('created');
@@ -31,7 +32,7 @@ export default function Home() {
   const trashCount = documents.filter(d => Boolean(d.trash)).length;
 
   // Auto-open Trash view if the current user owns trashed items and there are no non-trashed items
-  const ownsTrashed = documents.some(d => d.trash && d.owner && ((d.owner as { username?: string }).username === currentUser));
+  const ownsTrashed = documents.some(d => d.trash && d.owner && ((d.owner as { username?: string }).username === user));
   const nonTrashedCount = documents.filter(d => !d.trash).length;
   const effectiveShowTrash = showTrash || (ownsTrashed && nonTrashedCount === 0);
   const visibleDocuments = sortedDocuments.filter(d => effectiveShowTrash ? Boolean(d.trash) : !Boolean(d.trash));
@@ -76,9 +77,9 @@ export default function Home() {
           </div>
         ) : (
           !gridView ? (
-            <DocumentList documents={visibleDocuments} jwt={jwt} currentUser={currentUser} onUpdated={handleUpdated} />
+            <DocumentList documents={visibleDocuments} jwt={token} currentUser={user} onUpdated={handleUpdated} />
           ) : (
-            <DocumentGrid documents={visibleDocuments} jwt={jwt} currentUser={currentUser} onUpdated={handleUpdated} />
+            <DocumentGrid documents={visibleDocuments} jwt={token} currentUser={user} onUpdated={handleUpdated} />
           )
         )}
       </div>

@@ -2,9 +2,12 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useAuth } from "../context/AuthContext"
 
 export default function Login() {
   const router = useRouter()
+  const { login } = useAuth()
+
   const [userPrompt, setUserPrompt] = useState<string>('')
   const [username, setUsername] = useState<string>('')
   const [password, setPassword] = useState<string>('')
@@ -33,10 +36,8 @@ export default function Login() {
       }
 
       if (data.token) {
-        localStorage.setItem("token", data.token)
-        localStorage.setItem("user", username)
+        login(data.token, username)
         router.push("/")
-
       }
 
 
