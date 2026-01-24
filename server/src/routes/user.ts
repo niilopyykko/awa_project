@@ -12,10 +12,13 @@ const router: Router = Router()
 
 router.post("/register",
     upload.single('profilePic'),
-    body("username").trim().isLength({min: 3}).escape().withMessage("Username too short"),
-    body("password").isLength({min: 5}).withMessage("Password too short").matches(/[0-9]/).withMessage("Password must contain a number"),
-//SHOULD HAVE USED .isStrongPassword
+    body("username").trim().isLength({ min: 3 }).escape().withMessage("Username too short"),
+    body("password").isLength({ min: 5 }).withMessage("Password too short").matches(/[0-9]/).withMessage("Password must contain a number"),
+    //SHOULD HAVE USED .isStrongPassword
     async (req: Request, res: Response) => {
+        if (process.env.DISABLE_REGISTRATION === "true") {
+            return res.status(403).json({ message: "Registration is disabled" });
+        }
         const errors: Result<ValidationError> = validationResult(req)
 
         if (!errors.isEmpty()) {
@@ -56,21 +59,21 @@ router.post("/register",
 
 // Return current authenticated user's profile
 router.get('/me/avatar', validateToken, async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).user!.id;
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).send('User not found');
+    try {
+        const userId = (req as any).user!.id;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).send('User not found');
 
-    if (!user.profilePic) return res.status(404).send('No profile image');
+        if (!user.profilePic) return res.status(404).send('No profile image');
 
-    const profilePicPath = path.join(process.cwd(), 'uploads', path.basename(user.profilePic));
-    if (!fs.existsSync(profilePicPath)) return res.status(404).send('File not found');
+        const profilePicPath = path.join(process.cwd(), 'uploads', path.basename(user.profilePic));
+        if (!fs.existsSync(profilePicPath)) return res.status(404).send('File not found');
 
-    return res.sendFile(profilePicPath);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).send('Internal server error');
-  }
+        return res.sendFile(profilePicPath);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send('Internal server error');
+    }
 });
 
 router.post("/login",

@@ -5,10 +5,14 @@
 
 ---
 
-DISCLAIMER:
+## ⚠️ Disclaimer
 
-DO NOT RUN THIS IN APP ANY KIND OF PRODUCTION WITH SENSITIVE INFORMATION AS THE APP HAS NOT BEEN PROPERLY TESTED FOR STABILITY AND/OR SECURITY
-CONSIDER ALL UPLOADED FILES AND TEXT DOCUMENTS TO BE PUBLIC TO ANYONE
+This project is a **development/demo application**.
+
+- Not tested for production use
+- No security hardening
+- Do **not** use with sensitive data
+- Treat all uploaded content as potentially public
 
 Brief: a Next.js frontend with an Express + TypeScript backend, storing documents in MongoDB. Features include user accounts, avatars, file uploads, sharing, and PDF generation.
 
@@ -77,7 +81,9 @@ WIP features
 
 Known issues
 
-- All uploaded files have a view link by default, making them actually public
+- Uploaded files are publicly accessible by URL
+- No access control on file downloads
+- Locking and collaboration features are experimental
 
 Troubleshooting
 
