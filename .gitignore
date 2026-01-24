@@ -1,1 +1,26 @@
+# uploads folder (user uploaded files)
 uploads/
+
+# Environment files (do not commit secrets)
+# Ignore any .env file in any subdirectory, but allow committed examples
+**/.env
+**/.env.*
+!**/.env.example
+!**/*.env.example
+
+# Node / Next.js
+node_modules/
+.next/
+dist/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+
+# Build artifacts
+client/.next/
+server/dist/
+uploads/
+.env
