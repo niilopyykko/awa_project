@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/User";
 import path from "path";
 import fs from "fs";
-// Replaced Puppeteer with html-pdf-node (simpler wrapper)
+
 
 const router: Router = Router();
 

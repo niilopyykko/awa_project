@@ -2,6 +2,7 @@
 import { IUser } from "@/src/types";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@heroui/react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 
 interface FileActionsProps {
     fileId: string;
@@ -15,7 +16,7 @@ interface FileActionsProps {
 
 export default function FileActions({ fileId, fileName, isTrashed = false, fileOwner, currentUsername, editors = [], onUpdated }: FileActionsProps) {
     const router = useRouter();
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const { token } = useAuth();
     // Strict props-based visibility: require currentUsername prop and owner match
     if (!currentUsername) return null;
     const isOwner = fileOwner && String(currentUsername) === String(fileOwner);

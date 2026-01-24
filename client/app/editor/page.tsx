@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import Tiptap from '../components/Tiptap'
 import { useEffect, useState, useRef, FormEvent } from 'react'
+import useDocuments from '../hooks/useDocuments'
 import { useAuth } from '../context/AuthContext'
 
 type HTMLContent = string
@@ -16,7 +17,8 @@ type EditorProps = { //if editor is opened from drive browser, populate content 
 }
 
 export default function Editor({ driveContent, driveName, driveEditors, driveCommenter, driveViewer }: EditorProps) {
-    const token = useAuth().token
+    const { token } = useDocuments();
+    const { logout } = useAuth();
     const [content, setContent] = useState<string>(driveContent ?? '<p>Text Content here...</p>')
     const [docName, setDocName] = useState<string>(driveName ?? '')
     const [editors, setEditors] = useState<string>(driveEditors ?? '"john1, john2, john3" : ')
@@ -380,7 +382,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 console.error('Upload failed:', error)
                 if (error.message === 'Access denied, missing token') {
                     alert('Your session has expired. Please log in again.')
-                    localStorage.removeItem('token')
+                    logout()
                     window.location.href = '/login'
                 }
             }

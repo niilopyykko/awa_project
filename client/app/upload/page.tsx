@@ -1,18 +1,15 @@
 'use client'
 
 import Link from "next/link"
-import { FormEvent, useState, useEffect } from "react"
+import { FormEvent, useState } from "react"
+import useDocuments from "../hooks/useDocuments";
+import { useAuth } from "../context/AuthContext";
 
 
 export default function Upload() {
-  const [jwt, setJwt] = useState<string | null>(null)
+  const { token: jwt } = useDocuments();
+  const { logout } = useAuth();
 
-  useEffect(() => {
-    if (localStorage.getItem("token")) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setJwt(localStorage.getItem("token"))
-    }
-  }, [jwt])
 
   const [file, setFile] = useState<File | null>(null)
   const [editors, setEditors] = useState<string>("")
@@ -61,7 +58,7 @@ export default function Upload() {
         console.error('Upload failed:', error)
         if (error.message === 'Access denied, missing token') {
           alert('Your session has expired. Please log in again.')
-          localStorage.removeItem('token')
+          logout()
           window.location.href = '/login'
         }
       }

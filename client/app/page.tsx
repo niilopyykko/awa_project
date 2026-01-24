@@ -7,13 +7,14 @@ import DocumentGrid from "./components/DocumentGrid";
 import useDocuments from "./hooks/useDocuments";
 import { IDocument } from "@/src/types";
 
+
 export default function Home() {
 
 
   const [visibleDocuments, setVisibleDocuments] = useState<IDocument[]>([]);
   const [page, setPage] = useState<number>(1);
 
-  const { documents, token, user, refresh } = useDocuments();
+  const { documents, user, refresh } = useDocuments();
   const [gridView, setGridView] = useState<boolean>(false);
   const [showTrash, setShowTrash] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -127,13 +128,13 @@ export default function Home() {
       ) : (
         !gridView ? (
           <DocumentList
-            documents={paginatedDocs} // <--- slice käytössä
+            documents={paginatedDocs}
             currentUser={user}
             onUpdated={handleUpdated}
           />
         ) : (
           <DocumentGrid
-            documents={paginatedDocs} // <--- slice käytössä
+            documents={paginatedDocs}
             currentUser={user}
             onUpdated={handleUpdated}
           />
