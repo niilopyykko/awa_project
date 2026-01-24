@@ -4,26 +4,24 @@
   "main": "server.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "tsc-watch --onSuccess \"nodemon dist/server.js\"",
-    "dev": "ts-node-dev --respawn --transpile-only server.ts"
+    "start": "node dist/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only server.ts",
+    "build": "tsc"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@editorjs/editorjs": "^2.31.1",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
-    "crypto-js": "^4.2.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-validator": "^7.3.1",
+    "html-pdf-node": "^1.0.7",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.5",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
-    "nodemon": "^3.1.11",
-    "path": "^0.12.7",
     "sass": "^1.97.3"
   },
   "devDependencies": {
@@ -33,7 +31,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.0.0",
-    "tsc-watch": "^7.2.0",
-    "ts-node-dev": "^2.0.0"
+    "ts-node-dev": "^2.0.0",
+    "tsc-watch": "^7.2.0"
   }
 }

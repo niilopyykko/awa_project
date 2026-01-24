@@ -8,6 +8,7 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/User";
 import path from "path";
 import fs from "fs";
+// Replaced Puppeteer with html-pdf-node (simpler wrapper)
 
 const router: Router = Router();
 
@@ -534,6 +535,54 @@ router.get("/documents/:id", async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
+// Generate PDF for document (owner or editor or public)
+router.get(
+  "/documents/:id/pdf",
+  validateToken,
+  async (req: CustomRequest, res: Response) => {
+    try {
+      const id = req.params.id;
+      const userId = req.user!.id;
+
+      const doc = await UserDocument.findById(id).populate("owner", "username").populate("editors", "username");
+      if (!doc) return res.status(404).json({ message: "Document not found" });
+
+      const isOwner = String(doc.owner?._id || doc.owner) === String(userId);
+      const editorsArr: any[] = (doc.editors || []).map((e: any) => (e._id ? String(e._id) : String(e)));
+      const isEditor = editorsArr.includes(String(userId));
+
+      if (!doc.isVisibleNonAuth && !isOwner && !isEditor) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const title = doc.name || "document";
+      const safeFileName = title.replace(/[^a-z0-9\-_\.]/gi, "_") + ".pdf";
+
+      const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; padding: 24px; color: #111} img{max-width:100%} .title{font-size:20px;font-weight:600;margin-bottom:12px}</style></head><body><div class="title">${String(title)}</div>${doc.content || ""}</body></html>`;
+
+      // Use html-pdf-node for HTML -> PDF conversion
+      const html_to_pdf: any = require('html-pdf-node');
+      const options: any = { format: 'A4', args: ['--no-sandbox', '--disable-setuid-sandbox'] };
+      const file: any = { content: html };
+
+      try {
+        const raw = await html_to_pdf.generatePdf(file, options);
+        const pdfBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw as any);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeFileName}"`);
+        return res.send(pdfBuffer);
+      } catch (e) {
+        console.error('PDF generation error', e);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+)
 
 router.get(
   "/uploads/:id",

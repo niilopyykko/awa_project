@@ -71,8 +71,8 @@ export default function Register() {
           <li className="text-black">Password <span className="font-bold">MUST</span> be at least 5 characters long </li>
           <li className="text-black">Password <span className="font-bold">MUST</span> contain a number </li>
         </ul>
-        <label className="text-black pt-4 rounded-t-2xl bg-fuchsia-400 m-0 mt-4 min-w-2xs max-w-lg text-center pb-2">Profile picture (optional)</label>
-        <input type="file" accept="image/*" onChange={(e) => { if (e.target.files && e.target.files[0]) setProfileFile(e.target.files[0]) }} className="bg-fuchsia-300 rounded-b-md text-black min-w-2xs max-w-lg" />
+        <label className="text-black pt-2 pb-0 mb-0 text-sm w-fit text-center">Profile picture (optional)</label>
+        <input type="file" accept="image/*" onChange={(e) => { if (e.target.files && e.target.files[0]) setProfileFile(e.target.files[0]) }} className="bg-fuchsia-300 rounded-md text-black min-w-2xs max-w-lg" />
         <button type="submit" className="bg-red-800 text-yellow-600 m-2 border-2 text-2xl px-2 rounded-md hover:bg-amber-600 hover:text-black active:bg-red-600">Register</button>
       </form>
       {typeof userPrompt === "string" && userPrompt && (

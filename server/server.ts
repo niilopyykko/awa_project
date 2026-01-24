@@ -1,5 +1,6 @@
 import express, { Express } from "express"
 import path from "path"
+import fs from "fs"
 import router from "./src/routes/index"
 import documentsRouter from "./src/routes/documents"
 import userRouter from "./src/routes/user"
@@ -9,6 +10,17 @@ import dotenv from "dotenv"
 import cors, { CorsOptions } from 'cors'
 
 dotenv.config()
+
+// Ensure uploads directory exists (some routes may read files directly)
+const uploadsDir = path.resolve(process.cwd(), 'uploads')
+if (!fs.existsSync(uploadsDir)) {
+    try {
+        fs.mkdirSync(uploadsDir, { recursive: true })
+        console.log('Created uploads directory:', uploadsDir)
+    } catch (e) {
+        console.error('Failed to create uploads directory', e)
+    }
+}
 
 const app: Express = express()
 const port: number = parseInt(process.env.PORT as string) || 3001

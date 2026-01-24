@@ -2,7 +2,9 @@ import mongoose, { now, Schema } from "mongoose";
 
 interface IUserDocument extends Document {
     name: string
-    owner: { type: Schema.Types.ObjectId, ref: "User", required: true }
+    owner: {
+        _id: { type: Schema.Types.ObjectId; ref: "User"; required: true; }; type: Schema.Types.ObjectId, ref: "User", required: true 
+}
 
     editors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] //list of users with permission to edit
     isVisibleNonAuth: boolean  //if document is visible to users that are not logged in

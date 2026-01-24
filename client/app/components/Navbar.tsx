@@ -13,26 +13,42 @@ export default function Navbar() {
 
     useEffect(() => {
         if (!token) {
+            // clear any previously shown avatar when logged out
+            setTimeout(() => setProfilePic(null), 0)
             return
         }
 
         let mounted = true
-            ; (async () => {
-                try {
-                    const response = await fetch('http://localhost:3001/user/me/avatar', {
-                        headers: { Authorization: token ? `Bearer ${token}` : '' }
-                    })
-                    if (response.ok && mounted) {
-                        const blob = await response.blob();
-                        const url = URL.createObjectURL(blob);
-                        setProfilePic(url);
-                    }
-                } catch (err) {
-                    console.error('Failed to fetch profile', err)
-                }
-            })()
+        let currentUrl: string = '';
 
-        return () => { mounted = false }
+        (async () => {
+            // clear stale avatar while fetching (defer to avoid sync setState warnings)
+            setTimeout(() => setProfilePic(null), 0)
+            try {
+                const response = await fetch('http://localhost:3001/user/me/avatar', {
+                    headers: { Authorization: token ? `Bearer ${token}` : '' }
+                })
+                if (response.ok && mounted) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    currentUrl = url
+                    setProfilePic(url);
+                } else {
+                    // ensure we don't keep a stale avatar if server returns no image
+                    if (mounted) setTimeout(() => setProfilePic(null), 0)
+                }
+            } catch (err) {
+                console.error('Failed to fetch profile', err)
+                if (mounted) setTimeout(() => setProfilePic(null), 0)
+            }
+        })()
+
+        return () => {
+            mounted = false
+            if (currentUrl) {
+                try { URL.revokeObjectURL(currentUrl) } catch { }
+            }
+        }
     }, [token])
 
     return (
@@ -118,7 +134,16 @@ export default function Navbar() {
 
                     {token && (<>
                         <div className="flex items-center gap-3 bg-blue-500 px-3 py-1 rounded-full shadow">
-                            {profilePic && <img src={profilePic} alt="avatar" className="w-8 h-8 rounded-full object-cover" />}
+                            {profilePic && (
+                                <Image
+                                    src={profilePic}
+                                    alt="avatar"
+                                    width={32}
+                                    height={32}
+                                    className="w-8 h-8 rounded-full object-cover"
+                                    unoptimized
+                                />
+                            )}
                             <span className="text-sm">
                                 Logged in as <span className="font-semibold">{user}</span>
                             </span>

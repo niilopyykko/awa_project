@@ -55,6 +55,46 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
         // Request parent switch back to Drive; if trash becomes empty, UI will reflect it
         if (onUpdated) onUpdated({ switchToDrive: true });
     };
+    const handleDownload = async () => {
+        try {
+            const res = await fetch(`http://localhost:3001/api/documents/${fileId}/pdf`, {
+                method: 'GET',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+
+            if (!res.ok) {
+                let msg = `Download failed: ${res.status}`;
+                try {
+                    const j = await res.json(); if (j && j.message) msg += ` - ${j.message}`;
+                } catch { }
+                throw new Error(msg);
+            }
+
+            const contentType = res.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                const j = await res.json();
+                throw new Error(j?.message || 'Download returned JSON');
+            }
+
+            const blob = await res.blob();
+            let filename = fileName || 'document.pdf';
+            const cd = res.headers.get('content-disposition') || '';
+            const m = cd.match(/filename\*?=(?:UTF-8'')?"?([^";\n]+)/i);
+            if (m && m[1]) filename = decodeURIComponent(m[1]);
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error(err);
+            alert((err as Error).message || 'Download failed. See console for details.');
+        }
+    };
     const handleCopy = () => {
         (async () => {
             try {
@@ -195,6 +235,7 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
                     <>
                         <DropdownItem key="rename" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleRename}>Rename</DropdownItem>
                         <DropdownItem key="copy" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleCopy}>Create Copy</DropdownItem>
+                        <DropdownItem key="download" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleDownload}>Download PDF</DropdownItem>
                         <DropdownItem key="share" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleShare} >Share</DropdownItem>
                         <DropdownItem key="link" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleLink}>Get Share Link</DropdownItem>
                         <DropdownItem key="trash" className="cursor-pointer m-1 px-1 text-center size-auto bg-yellow-300 rounded-md text-black" onClick={handleTrash}>Move to Trash</DropdownItem>
