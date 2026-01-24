@@ -1,7 +1,8 @@
 'use client'
 import Link from 'next/link'
 import Tiptap from '../components/Tiptap'
-import { useEffect, useState, FormEvent } from 'react'
+import { useEffect, useState, useRef, FormEvent } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 type HTMLContent = string
 
@@ -15,7 +16,7 @@ type EditorProps = { //if editor is opened from drive browser, populate content 
 }
 
 export default function Editor({ driveContent, driveName, driveEditors, driveCommenter, driveViewer }: EditorProps) {
-    const [jwt, setJwt] = useState<string | null>(null)
+    const token = useAuth().token
     const [content, setContent] = useState<string>(driveContent ?? '<p>Text Content here...</p>')
     const [docName, setDocName] = useState<string>(driveName ?? '')
     const [editors, setEditors] = useState<string>(driveEditors ?? '"john1, john2, john3" : ')
@@ -26,12 +27,14 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
     const [isLocked, setIsLocked] = useState<boolean | null>(null)
     const [lockOwner, setLockOwner] = useState<string | null>(null)
     const [documentId, setDocumentId] = useState<string | null>(null)
+    const weOwnLock = useRef<boolean>(false)
+    const renewInterval = useRef<number | null>(null)
+
+    const autosaveTimer = useRef<number | null>(null)
+    const [draftSaved, setDraftSaved] = useState<boolean>(false)
+    const lockPollInterval = useRef<number | null>(null)
 
 
-    useEffect(() => {
-        // read token once on mount
-        setJwt(localStorage.getItem("token"))
-    }, [])
 
     // If we were navigated here with editor content in sessionStorage, use it
     useEffect(() => {
@@ -71,7 +74,6 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 if (fromId) {
                     ; (async () => {
                         try {
-                            const token = localStorage.getItem('token')
                             const response = await fetch(`http://localhost:3001/api/documents/${fromId}/lock`, {
                                 method: 'GET',
                                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
@@ -94,10 +96,223 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                     })()
                 }
             }
-        } catch (e) {
+        } catch {
             /* ignore if sessionStorage not available */
         }
-    }, [])
+    }, [token])
+
+    // Autosave editor fields to sessionStorage
+    useEffect(() => {
+        if (autosaveTimer.current) {
+            clearTimeout(autosaveTimer.current)
+        }
+
+        autosaveTimer.current = window.setTimeout(() => {
+            try {
+                sessionStorage.setItem('editorContent', content)
+                sessionStorage.setItem('editorName', docName)
+                if (documentId) sessionStorage.setItem('editorId', documentId)
+                sessionStorage.setItem('editorEditors', editors)
+                sessionStorage.setItem('editorCommenter', commenter)
+                sessionStorage.setItem('editorViewer', viewer)
+                sessionStorage.setItem('editorIsPublic', String(isPublic))
+                setDraftSaved(true)
+                window.setTimeout(() => setDraftSaved(false), 1200)
+            } catch {
+                // ignore
+            }
+        }, 1000) as number
+
+        return () => {
+            if (autosaveTimer.current) {
+                clearTimeout(autosaveTimer.current)
+                autosaveTimer.current = null
+            }
+        }
+        // watch the fields we want persisted
+    }, [content, docName, editors, commenter, viewer, isPublic, documentId])
+
+    // Poll lock status periodically when someone else holds the lock
+    useEffect(() => {
+        if (!documentId) return
+
+        // start polling only when locked by someone else
+        if (isLocked === true) {
+            if (lockPollInterval.current) return
+            lockPollInterval.current = window.setInterval(async () => {
+                try {
+                    const resp = await fetch(`http://localhost:3001/api/documents/${documentId}/lock`, {
+                        method: 'GET',
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    })
+                    if (resp.ok) {
+                        // CHECK IF DOCUMENT HAS HAD CHANGES DURING WAIT
+
+                        const js = await resp.json()
+                        if (!js.locked) {
+                            // lock released — fetch latest document and compare
+                            try {
+                                const dresp = await fetch(`http://localhost:3001/api/documents/${documentId}`, {
+                                    method: 'GET',
+                                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                                })
+                                if (dresp.ok) {
+                                    const djson = await dresp.json()
+                                    const remoteContent = djson.document?.content ?? ''
+                                    const remoteName = djson.document?.name ?? ''
+
+                                    if (remoteContent !== content) {
+                                        const load = window.confirm('The document changed on the server while you were waiting. Load remote version? (Cancel to keep your draft)')
+                                        if (load) {
+                                            setContent(remoteContent)
+                                            setDocName(remoteName)
+                                            try { sessionStorage.removeItem('editorContent') } catch { }
+                                        }
+                                    }
+                                }
+                            } catch (err) {
+                                console.error('Failed to fetch latest document after lock release', err)
+                            }
+
+                            // Try to acquire the lock now that it's released
+                            try {
+                                const lockResp = await fetch(`http://localhost:3001/api/documents/${documentId}/lock`, {
+                                    method: 'POST',
+                                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                                })
+                                if (lockResp.status === 409) {
+                                    const js2 = await lockResp.json()
+                                    setIsLocked(true)
+                                    setLockOwner(js2.lockedBy?.username ?? 'another user')
+                                    weOwnLock.current = false
+                                } else if (lockResp.ok) {
+                                    weOwnLock.current = true
+                                    setIsLocked(false)
+                                    setLockOwner(null)
+
+                                    // start renew interval
+                                    if (renewInterval.current) {
+                                        clearInterval(renewInterval.current)
+                                    }
+                                    renewInterval.current = window.setInterval(async () => {
+                                        try {
+                                            await fetch(`http://localhost:3001/api/documents/${documentId}/renewLock`, {
+                                                method: 'POST',
+                                                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                                            })
+                                        } catch (err) {
+                                            console.error('Failed to renew lock', err)
+                                        }
+                                    }, 5 * 60 * 1000) as number
+                                }
+                            } catch (err) {
+                                console.error('Failed to acquire lock after release', err)
+                            }
+                        } else {
+                            setIsLocked(true)
+                            setLockOwner(js.lockedBy?.username ?? 'another user')
+                        }
+                    }
+                } catch (err) {
+                    console.error('Lock poll failed', err)
+                }
+            }, 5000) as number
+        } else {
+            if (lockPollInterval.current) {
+                clearInterval(lockPollInterval.current)
+                lockPollInterval.current = null
+            }
+        }
+
+        return () => {
+            if (lockPollInterval.current) {
+                clearInterval(lockPollInterval.current)
+                lockPollInterval.current = null
+            }
+        }
+    }, [isLocked, documentId, token, content])
+
+
+    // Acquire lock when we have a documentId and token. Keep it alive and release on unload.
+    useEffect(() => {
+        if (!documentId || !token) return
+
+            ; (async () => {
+                try {
+                    const resp = await fetch(`http://localhost:3001/api/documents/${documentId}/lock`, {
+                        method: 'POST',
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    })
+
+                    if (resp.status === 409) {
+                        const js = await resp.json()
+                        setIsLocked(true)
+                        setLockOwner(js.lockedBy?.username ?? 'another user')
+                        weOwnLock.current = false
+                        return
+                    }
+
+                    if (resp.ok) {
+                        // we own the lock now  
+                        weOwnLock.current = true
+                        setIsLocked(false)
+                        setLockOwner(null)
+
+                        // start renew interval (every 5min)
+                        renewInterval.current = window.setInterval(async () => {
+                            try {
+                                await fetch(`http://localhost:3001/api/documents/${documentId}/renewLock`, {
+                                    method: 'POST',
+                                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                                })
+                            } catch (err) {
+                                console.error('Failed to renew lock', err)
+                            }
+                        }, 5 * 60 * 1000) as number
+                    }
+                } catch (err) {
+                    console.error('Failed to acquire lock', err)
+                }
+            })()
+
+        const beforeUnload = async () => {
+            if (!weOwnLock.current || !documentId) return
+            try {
+                await fetch(`http://localhost:3001/api/documents/${documentId}/unlock`, {
+                    method: 'POST',
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                })
+            } catch {
+                // ignore
+            }
+        }
+
+        window.addEventListener('beforeunload', beforeUnload)
+
+        return () => {
+            if (renewInterval.current) {
+                clearInterval(renewInterval.current)
+                renewInterval.current = null
+            }
+            window.removeEventListener('beforeunload', beforeUnload)
+
+                // best-effort unlock when component unmounts
+                ; (async () => {
+                    if (weOwnLock.current && documentId) {
+                        try {
+                            await fetch(`http://localhost:3001/api/documents/${documentId}/unlock`, {
+                                method: 'POST',
+                                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                            })
+                        } catch (err) {
+                            console.error('Failed to unlock on unmount', err)
+                        }
+                    }
+                })()
+        }
+    }, [documentId, token])
+
+
 
 
 
@@ -113,7 +328,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 alert("Please input text")
                 return
             }
-            if (!jwt) {
+            if (!token) {
                 console.error('No token available')
                 return
             }
@@ -132,7 +347,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
             const response = await fetch("http://localhost:3001/api/upload", {
                 method: "POST",
                 headers: {
-                    "Authorization": `Bearer ${jwt}`
+                    "Authorization": `Bearer ${token}`
                 },
                 body: formData
             })
@@ -140,9 +355,25 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
             if (response.ok) {
                 console.log('File uploaded successfully')
                 alert('File uploaded successfully!')
-                await response.json()
+                const body = await response.json()
 
-
+                // If we were editing an existing document, release the lock after save
+                try {
+                    const idToUnlock = body?.document?._id ?? documentId
+                    if (idToUnlock) {
+                        await fetch(`http://localhost:3001/api/documents/${idToUnlock}/unlock`, {
+                            method: 'POST',
+                            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                        })
+                        weOwnLock.current = false
+                        if (renewInterval.current) {
+                            clearInterval(renewInterval.current)
+                            renewInterval.current = null
+                        }
+                    }
+                } catch (err) {
+                    console.error('Failed to unlock after save', err)
+                }
 
             } else {
                 const error = await response.json()
@@ -164,7 +395,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
         <div className="max-w-4xl mx-auto ">
             <div className="mb-8 shadow-md">
                 <>
-                    {!jwt ? (
+                    {!token ? (
                         <div className='flex flex-col bg-fuchsia-300 rounded-md text-center p-2'>
                             <p className="text-gray-600 text-2xl">Please login to see text editor</p>
                             <Link href="/login" className="bg-amber-500 border-2 p-1 m-2 border-amber-50 text-amber-900 text-lg">Log in</Link>
@@ -262,7 +493,14 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                                 </div>
                                 <button type="submit" disabled={isLocked === true} className='bg-blue-500 p-2 mt-4 rounded hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed'>Save</button>
                             </form>
-
+                            <div className='flex items-center gap-3 mt-2'>
+                                <p className={`text-black p-2 ${isLocked === true ? "" : "hidden"}`}>
+                                    {lockOwner} is editing the document, please wait
+                                </p>
+                                {draftSaved && (
+                                    <span className='text-xs text-gray-600 italic'>Draft saved</span>
+                                )}
+                            </div>
                         </div>
                     </div>
                     )}

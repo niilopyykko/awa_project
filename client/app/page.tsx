@@ -1,41 +1,89 @@
 "use client"
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Toolbar from "./components/Toolbar";
 import DocumentList from "./components/DocumentList";
 import DocumentGrid from "./components/DocumentGrid";
 import useDocuments from "./hooks/useDocuments";
+import { IDocument } from "@/src/types";
 
 export default function Home() {
+
+
+  const [visibleDocuments, setVisibleDocuments] = useState<IDocument[]>([]);
+  const [page, setPage] = useState<number>(1);
 
   const { documents, token, user, refresh } = useDocuments();
   const [gridView, setGridView] = useState<boolean>(false);
   const [showTrash, setShowTrash] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortKey, setSortKey] = useState<'name' | 'created' | 'modified'>('created');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  const sortedDocuments = [...documents].sort((a, b) => {
-    let valA: string | number = 0;
-    let valB: string | number = 0;
-
-    switch (sortKey) {
-      case 'name':
-        return sortOrder === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-      case 'created':
-      default:
-        valA = new Date(a.createdAt).getTime();
-        valB = new Date(b.createdAt).getTime();
-        return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
-    }
-  });
-
   const trashCount = documents.filter(d => Boolean(d.trash)).length;
+
 
   // Auto-open Trash view if the current user owns trashed items and there are no non-trashed items
   const ownsTrashed = documents.some(d => d.trash && d.owner && ((d.owner as { username?: string }).username === user));
   const nonTrashedCount = documents.filter(d => !d.trash).length;
   const effectiveShowTrash = showTrash || (ownsTrashed && nonTrashedCount === 0);
-  const visibleDocuments = sortedDocuments.filter(d => effectiveShowTrash ? Boolean(d.trash) : !Boolean(d.trash));
+
+  useEffect(() => {
+
+    // filter by trash view first
+    const shown = documents.filter(d => effectiveShowTrash ? Boolean(d.trash) : !Boolean(d.trash));
+
+    // search
+    const q = searchQuery.trim().toLowerCase();
+    const searched = q
+      ? shown.filter((d) => {
+        const name = (d.name || "").toLowerCase();
+        const owner = ((d.owner as { username?: string })?.username || "").toLowerCase();
+        const filename = (d.filepath || "").split("/").pop()?.split("\\").pop()?.toLowerCase() || "";
+        const content = (d.content || "").replace(/<[^>]*>/g, "").toLowerCase();
+        const createdStr = new Date(d.createdAt).toLocaleString().toLowerCase(); // 24.1.2026
+        const createdIso = new Date(d.createdAt).toISOString().toLowerCase(); //    2026-01-24
+        const updatedStr = new Date(d.updatedAt).toLocaleString().toLowerCase(); // 24.1.2026
+        const updatedIso = new Date(d.updatedAt).toISOString().toLowerCase(); //    2026-01-24
+        return (
+          name.includes(q) || owner.includes(q) || filename.includes(q) || content.includes(q)
+          || createdStr.includes(q) || createdIso.includes(q) || updatedStr.includes(q) || updatedIso.includes(q)
+        );
+      })
+      : shown;
+
+    // sort
+    const sorted = [...searched].sort((a, b) => {
+      let valA: string | number = 0;
+      let valB: string | number = 0;
+
+      switch (sortKey) {
+        case 'name':
+          return sortOrder === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+        case 'created':
+          valA = new Date(a.createdAt).getTime();
+          valB = new Date(b.createdAt).getTime();
+          return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+        case 'modified':
+        default:
+          valA = new Date(a.updatedAt).getTime();
+          valB = new Date(b.updatedAt).getTime();
+          return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+      }
+    });
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setVisibleDocuments(sorted);
+  }, [documents, searchQuery, showTrash, sortKey, sortOrder, user, effectiveShowTrash]);
+
+
+  // reset page when query or filters change
+  // compute pagination helpers
+  const pageSize = gridView ? 6 : 8;
+  const totalPages = Math.max(1, Math.ceil(visibleDocuments.length / pageSize));
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  const paginatedDocs = visibleDocuments.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
 
   const handleUpdated = (opts?: { switchToDrive?: boolean }) => {
     // refresh documents list
@@ -46,7 +94,11 @@ export default function Home() {
 
   return (
     <>
-      {!(visibleDocuments.length === 0 && !effectiveShowTrash) && (
+      <div className="flex items-center justify-between gap-4 mb-2">
+        <span className={`px-3 py-1 ml-8 min-w-sm text-center rounded-full text-md ${effectiveShowTrash ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
+          {effectiveShowTrash ? 'Trash' : 'Drive'}
+        </span>
+
         <Toolbar
           sortKey={sortKey}
           setSortKey={setSortKey}
@@ -58,31 +110,35 @@ export default function Home() {
           setShowTrash={setShowTrash}
           trashCount={trashCount}
           driveCount={nonTrashedCount}
+          onSearch={setSearchQuery}
+          page={currentPage}
+          setPage={setPage}
+          totalPages={totalPages}
         />
-      )}
-
-      <div className="p-4">
-        <div className="mb-4">
-          <span className={`px-3 py-1 rounded-full text-sm ${effectiveShowTrash ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
-            {effectiveShowTrash ? 'Trash' : 'Drive'}
-          </span>
-        </div>
-
-        {visibleDocuments.length === 0 ? (
-          <div className="flex items-center justify-center min-h-[40vh] p-8">
-            <div>
-              <p className="text-center p-4 text-2xl rounded-t-2xl bg-fuchsia-400 text-black">Drive is empty</p>
-              <p className="text-center p-4 text-md rounded-b-2xl bg-fuchsia-200 text-black">OR DATABASE IS OFLINE?</p>
-            </div>
-          </div>
-        ) : (
-          !gridView ? (
-            <DocumentList documents={visibleDocuments} jwt={token} currentUser={user} onUpdated={handleUpdated} />
-          ) : (
-            <DocumentGrid documents={visibleDocuments} jwt={token} currentUser={user} onUpdated={handleUpdated} />
-          )
-        )}
       </div>
+
+      {visibleDocuments.length === 0 ? (
+        <div className="flex items-center justify-center min-h-[40vh] p-8">
+          <div>
+            <p className="text-center p-4 text-2xl rounded-t-2xl bg-fuchsia-400 text-black">Drive is empty</p>
+            <p className="text-center p-4 text-md rounded-b-2xl bg-fuchsia-200 text-black">OR DATABASE IS OFFLINE?</p>
+          </div>
+        </div>
+      ) : (
+        !gridView ? (
+          <DocumentList
+            documents={paginatedDocs} // <--- slice käytössä
+            currentUser={user}
+            onUpdated={handleUpdated}
+          />
+        ) : (
+          <DocumentGrid
+            documents={paginatedDocs} // <--- slice käytössä
+            currentUser={user}
+            onUpdated={handleUpdated}
+          />
+        )
+      )}
     </>
   );
 }

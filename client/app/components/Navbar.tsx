@@ -1,5 +1,5 @@
 'use client'
-
+import Image from 'next/image';
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
@@ -9,6 +9,31 @@ import { useAuth } from '../context/AuthContext'
 export default function Navbar() {
     const { token, user, logout } = useAuth() //Must have if we want login and logout to refresh navbar and drivepage
     const [menuOpen, setMenuOpen] = useState(false)
+    const [profilePic, setProfilePic] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (!token) {
+            return
+        }
+
+        let mounted = true
+            ; (async () => {
+                try {
+                    const response = await fetch('http://localhost:3001/user/me/avatar', {
+                        headers: { Authorization: token ? `Bearer ${token}` : '' }
+                    })
+                    if (response.ok && mounted) {
+                        const blob = await response.blob();
+                        const url = URL.createObjectURL(blob);
+                        setProfilePic(url);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch profile', err)
+                }
+            })()
+
+        return () => { mounted = false }
+    }, [token])
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white h-16">
@@ -18,7 +43,17 @@ export default function Navbar() {
 
                 {/* Desktop menu (hidden on mobile) */}
                 <div className="hidden md:flex gap-4 items-center">
-                    <Link href="/editor" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Editor</Link>
+                    <Link href="/editor" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800' onClick={() => {
+                        try {
+                            sessionStorage.removeItem('editorContent')
+                            sessionStorage.removeItem('editorName')
+                            sessionStorage.removeItem('editorId')
+                            sessionStorage.removeItem('editorEditors')
+                            sessionStorage.removeItem('editorCommenter')
+                            sessionStorage.removeItem('editorViewer')
+                            sessionStorage.removeItem('editorIsPublic')
+                        } catch { }
+                    }}>New Text Document</Link>
                     <Link href="/upload" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Upload</Link>
                 </div>
 
@@ -29,9 +64,19 @@ export default function Navbar() {
 
                     {token && (
                         <>
-                            <span className="text-sm">
-                                Logged in as <span className="font-semibold">{user}</span>
-                            </span>                            <button
+                            <div className="flex items-center gap-2">
+                                {profilePic ? (<Image
+                                    src={profilePic}
+                                    alt="Profile Avatar"
+                                    width={40}
+                                    height={40}
+                                    className="rounded-full"
+                                />) : (null)}
+                                <span className="text-sm">
+                                    Logged in as <span className="font-semibold">{user}</span>
+                                </span>
+                            </div>
+                            <button
                                 onClick={logout}
                                 className="bg-red-500 p-2 rounded hover:bg-red-600 hover:cursor-pointer"
                             >
@@ -53,8 +98,8 @@ export default function Navbar() {
             {/* Mobile menu: shown below nav on small screens */}
             {menuOpen && (
                 <div className="md:hidden mt-2 p-4 flex flex-col gap-4 bg-blue-600 text-white">
-                    <Link href="/editor" onClick={() => setMenuOpen(false)}>
-                        Editor
+                    <Link href="/editor" onClick={() => { try { sessionStorage.removeItem('editorContent'); sessionStorage.removeItem('editorName'); sessionStorage.removeItem('editorId'); sessionStorage.removeItem('editorEditors'); sessionStorage.removeItem('editorCommenter'); sessionStorage.removeItem('editorViewer'); sessionStorage.removeItem('editorIsPublic'); } catch { } setMenuOpen(false); }}>
+                        New Text Document
                     </Link>
                     <Link href="/upload" onClick={() => setMenuOpen(false)}>
                         Upload
@@ -73,6 +118,7 @@ export default function Navbar() {
 
                     {token && (<>
                         <div className="flex items-center gap-3 bg-blue-500 px-3 py-1 rounded-full shadow">
+                            {profilePic && <img src={profilePic} alt="avatar" className="w-8 h-8 rounded-full object-cover" />}
                             <span className="text-sm">
                                 Logged in as <span className="font-semibold">{user}</span>
                             </span>

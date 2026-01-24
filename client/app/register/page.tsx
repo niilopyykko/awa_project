@@ -16,18 +16,19 @@ export default function Register() {
   const { login } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [profileFile, setProfileFile] = useState<File | null>(null)
   const [userPrompt, setUserPrompt] = useState<string | string[]>('')
 
   const submitRegister = async () => {
+    // submit as multipart/form-data so we can include profile picture
+    const fd = new FormData()
+    fd.append('username', username)
+    fd.append('password', password)
+    if (profileFile) fd.append('profilePic', profileFile)
+
     const response = await fetch('http://localhost:3001/user/register', {
       method: 'POST',
-      body: JSON.stringify({
-        username: username,
-        password: password,
-      }),
-      headers: {
-        'Content-type': 'application/json'
-      }
+      body: fd
     })
     const data = await response.json()
     console.log(response.status, data)
@@ -70,6 +71,8 @@ export default function Register() {
           <li className="text-black">Password <span className="font-bold">MUST</span> be at least 5 characters long </li>
           <li className="text-black">Password <span className="font-bold">MUST</span> contain a number </li>
         </ul>
+        <label className="text-black pt-4 rounded-t-2xl bg-fuchsia-400 m-0 mt-4 min-w-2xs max-w-lg text-center pb-2">Profile picture (optional)</label>
+        <input type="file" accept="image/*" onChange={(e) => { if (e.target.files && e.target.files[0]) setProfileFile(e.target.files[0]) }} className="bg-fuchsia-300 rounded-b-md text-black min-w-2xs max-w-lg" />
         <button type="submit" className="bg-red-800 text-yellow-600 m-2 border-2 text-2xl px-2 rounded-md hover:bg-amber-600 hover:text-black active:bg-red-600">Register</button>
       </form>
       {typeof userPrompt === "string" && userPrompt && (

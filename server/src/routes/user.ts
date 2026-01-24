@@ -3,11 +3,15 @@ import { body, Result, ValidationError, validationResult } from 'express-validat
 import bcrypt from 'bcrypt'
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import { User, IUser } from '../models/User'
+import path from 'path'
+import fs from 'fs'
+import upload from '../middleware/multer-config'
 import { validateToken } from '../middleware/validateToken'
 
 const router: Router = Router()
 
 router.post("/register",
+    upload.single('profilePic'),
     body("username").trim().isLength({min: 3}).escape().withMessage("Username too short"),
     body("password").isLength({min: 5}).withMessage("Password too short").matches(/[0-9]/).withMessage("Password must contain a number"),
 //SHOULD HAVE USED .isStrongPassword
@@ -29,10 +33,16 @@ router.post("/register",
             const salt: string = bcrypt.genSaltSync(10)
             const hash: string = bcrypt.hashSync(req.body.password, salt)
 
-            await User.create({
+            const userData: any = {
                 username: req.body.username,
                 password: hash
-            })
+            }
+
+            if (req.file && req.file.path) {
+                userData.profilePic = req.file.path
+            }
+
+            await User.create(userData)
 
             return res.status(200).json({ message: "User registered successfully" })
 
@@ -43,6 +53,25 @@ router.post("/register",
 
     }
 )
+
+// Return current authenticated user's profile
+router.get('/me/avatar', validateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user!.id;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).send('User not found');
+
+    if (!user.profilePic) return res.status(404).send('No profile image');
+
+    const profilePicPath = path.join(process.cwd(), 'uploads', path.basename(user.profilePic));
+    if (!fs.existsSync(profilePicPath)) return res.status(404).send('File not found');
+
+    return res.sendFile(profilePicPath);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send('Internal server error');
+  }
+});
 
 router.post("/login",
     body("username").trim().escape(),

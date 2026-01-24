@@ -76,6 +76,7 @@ export default function Upload() {
     navigator.clipboard.writeText(viewLink)
     setCopied(true)
     setTimeout(() => setCopied(false), 1000)
+
   }
 
   return (
@@ -102,7 +103,8 @@ export default function Upload() {
                       id="file"
                       name="file"
                       className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
-                      onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                      onChange={e => setFile(e.target.files?.[0] ?? null)}
+                    />
                   </div>
                   <div>
                     <label
@@ -135,11 +137,11 @@ export default function Upload() {
                 </div>
                 <div className="flex items-center gap-3">
                   <button type="submit" className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-md text-sm px-4 py-2.5">Upload</button>
-                  <button type="button" onClick={() => setFile(null)} className="text-sm px-3 py-2 border rounded-md bg-fuchsia-400 hover:bg-fuchsia-700 focus:ring-4 focus:ring-blue-300 text-black">Clear</button>
                 </div>
               </form>
               {viewLink && (
-                <div className="mt-4 flex justify-center">
+                <div className="mt-4 flex flex-col justify-center">
+                  <h1 className="m-auto p-2 text-black rounded-md bg-amber-500 border-2">Amazing Copyable link below (click it)</h1>
                   <button
                     onClick={handleCopy}
                     className={`border-2 p-2 ${copied ? 'bg-green-500' : 'bg-amber-500'} border-amber-50 m-auto my-2 underline`}>

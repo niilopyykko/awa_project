@@ -1,82 +1,163 @@
 "use client";
 import Image from "next/image";
 import FileActions from "./FileActions";
-import { IDocument, IUser } from "../../src/types";
+import { IDocument } from "../../src/types";
 import { useRouter } from "next/navigation";
+import { useAuth } from '../context/AuthContext'
+import { useEffect, useState } from "react";
 
 interface Props {
     doc: IDocument;
-    jwt?: string | null;
     currentUser?: string | null;
     onUpdated?: (opts?: { switchToDrive?: boolean }) => void;
+    compact?: boolean;
 }
 
-export default function DocumentCard({ doc, currentUser, onUpdated }: Props) {
+export default function DocumentCard({ doc, currentUser, onUpdated, compact }: Props) {
+    const { token } = useAuth();
     const router = useRouter();
-    const filepath = doc.filepath ?? '';
-    const filename = filepath ? (filepath.split('/').pop() || filepath.split('\\').pop() || '') : '';
-    const fileUrl = filename ? `http://localhost:3001/uploads/${filename}` : '';
-    const ext = (filename || '').split('.').pop()?.toLowerCase() || '';
-    const isImage = ['png', 'jpg', 'jpeg', 'webp', 'avif'].includes(ext);
-    const isGif = ext === 'gif';
-    const isVideo = ['mp4', 'webm', 'ogg'].includes(ext);
+    const [fileUrl, setFileUrl] = useState<string | null>(null);
+
+    const ext = doc.name.split(".").pop()?.toLowerCase() || "";
+    const isImage = ["png", "jpg", "jpeg", "webp", "avif"].includes(ext);
+    const isGif = ext === "gif";
+    const isVideo = ["mp4", "webm", "ogg"].includes(ext);
     const isTrashed = Boolean(doc.trash);
 
+    useEffect(() => {
+        const fetchFile = async () => {
+            if (!doc._id || !doc.filepath) return;
+            try {
+                const res = await fetch(`http://localhost:3001/api/uploads/${doc._id}`, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                });
+                if (!res.ok) {
+                    console.error("Failed to fetch file", res.status);
+                    setFileUrl(null);
+                    return;
+                }
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                setFileUrl(url);
+            } catch (err) {
+                console.error("Error fetching file", err);
+                setFileUrl(null);
+            }
+        };
+        fetchFile();
+    }, [doc._id, token]);
+
     const renderPlainText = (html: string) => {
-        const div = document.createElement('div');
+        const div = document.createElement("div");
         div.innerHTML = html;
-        return div.textContent || '';
-    }
+        return div.textContent || "";
+    };
+
+    const openEditor = () => {
+        try {
+            sessionStorage.setItem("editorContent", doc.content || "");
+            sessionStorage.setItem("editorName", doc.name);
+            sessionStorage.setItem("editorId", doc._id);
+            sessionStorage.setItem(
+                "editorEditors",
+                (doc.editors?.map(e => e.username) ?? []).join(", ")
+            );
+            sessionStorage.setItem(
+                "editorIsPublic",
+                String(doc.isVisibleNonAuth)
+            );
+            router.push("/editor");
+        } catch (err) {
+            console.error("Could not open editor", err);
+        }
+    };
 
     return (
-        <div className="relative flex items-center gap-4 p-4 bg-amber-800 border-amber-200 border-2 rounded">
-            <div className="flex-1">
-                <h3 className="font-bold">{doc.name}</h3>
-                <div className="text-sm">Uploaded by: {doc.owner.username} - {new Date(doc.createdAt).toLocaleString()}</div>
-                <div className="text-md rounded-2xl bg-blue-200 w-fit px-2 text-black  my-2">FILE IS {doc.isVisibleNonAuth ? (<span className="bg-fuchsia-300 rounded-2xl px-2 text-red-600 text-shadow-2xs">Public</span>) : <span className="bg-yellow-300 rounded-2xl px-2 text-green-600 text-shadow-2xs">Private</span>}</div>
-                <div className="mt-2">
-                    {filename ? (
-                        isVideo ? (
-                            <video src={fileUrl} controls className="max-h-40" />
-                        ) : isGif || isImage ? (
-                            <Image src={fileUrl} alt={doc.name} width={400} height={200} unoptimized className="object-contain" />
-                        ) : (
-                            <a href={fileUrl} target="_blank" rel="noreferrer" className="underline">Download</a>
-                        )
-                    ) : (
-                        <div
-                            onClick={() => {
-                                if (isTrashed) return;
-                                if (!filename && doc.content) {
-                                    try {
-                                        sessionStorage.setItem('editorContent', doc.content || '');
-                                        sessionStorage.setItem('editorName', doc.name);
-                                        sessionStorage.setItem('editorId', doc._id);
-                                        sessionStorage.setItem('editorEditors', (doc.editors?.map((e: IUser) => e.username) ?? []).join(', '));
-                                        sessionStorage.setItem('editorIsPublic', String(doc.isVisibleNonAuth));
-                                        router.push('/editor');
-                                    } catch (err) { console.error('Could not open editor', err) }
-                                }
-                            }}
-                            className={`mt-2 w-full h-40 flex items-center justify-center overflow-hidden rounded-2xl bg-amber-900 shadow-2xl p-2 ${isTrashed ? 'cursor-not-allowed pointer-events-none opacity-60' : 'cursor-pointer'}`}
-                        >
-                            <p>{renderPlainText(doc.content || '')}</p>
-                        </div>
-                    )}
+        <div
+            className={`flex flex-col gap-3 p-2 rounded border-2
+        ${compact ? "bg-amber-700 border-amber-400" : "bg-amber-800 border-amber-200"}`}
+        >
+            {/* Header + actions */}
+            <div className="flex items-start gap-2">
+                <div className="flex-1 min-w-0 rounded-md shadow-2xl bg-amber-700 p-2">
+                    <h3 className="font-bold truncate text-sm md:text-lg">{doc.name}</h3>
+
+                    <div className={`mt-1 text-xs ${compact ? "flex gap-2" : "flex flex-col gap-1"}`}>
+                        <span className="hidden md:block truncate">
+                            Uploaded by <b>{doc.owner.username}</b>
+                        </span>
+                        <span className="hidden lg:block truncate">
+                            Created @ {new Date(doc.createdAt).toLocaleString()}
+                        </span>
+                        <span className="hidden md:block truncate">
+                            Last modified @ {new Date(doc.updatedAt).toLocaleString()}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                    <div className="flex items-center gap-2">
+                        {!isTrashed && (
+                            <button
+                                onClick={openEditor}
+                                className="px-2 py-1 text-xs rounded-md bg-blue-500 hover:bg-blue-600"
+                            >
+                                Edit
+                            </button>
+                        )}
+                        <FileActions
+                            fileId={doc._id}
+                            fileName={doc.name}
+                            isTrashed={Boolean(doc.trash)}
+                            fileOwner={doc.owner?.username ?? ""}
+                            editors={doc.editors?.map(e => e.username) ?? []}
+                            currentUsername={currentUser ?? undefined}
+                            onUpdated={onUpdated}
+                        />
+                    </div>
+
+                    <div className="hidden md:flex flex-col items-end gap-1 text-[11px]">
+                        <span className="px-2 py-0.5 rounded bg-blue-200 text-black">
+                            {doc.isVisibleNonAuth ? "Public" : "Private*"}
+                        </span>
+                        {doc.trash && (
+                            <span className="px-2 py-0.5 rounded bg-red-600 text-white">
+                                Trashed
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
-            <div className="absolute top-2 right-2">
-                <FileActions
-                    fileId={doc._id}
-                    fileName={doc.name}
-                    isTrashed={Boolean(doc.trash)}
-                    fileOwner={doc.owner?.username ?? ''}
-                    editors={doc.editors?.map(e => e.username) ?? []}
-                    currentUsername={currentUser ?? undefined}
-                    onUpdated={onUpdated}
-                />
-            </div>
-            {doc.trash ? (<span className="absolute left-2 top-2 bg-red-600 text-white px-2 py-0.5 rounded">Trashed</span>) : null}
+
+            {/* Media / preview */}
+            {fileUrl && !compact && (
+                isVideo ? (
+                    <div className="max-h-60 overflow-hidden rounded flex justify-center">
+                        <video src={fileUrl} controls className="h-full w-auto object-contain" />
+                    </div>
+                ) : isGif || isImage ? (
+                    <Image
+                        src={fileUrl}
+                        alt={doc.name}
+                        width={400}
+                        height={200}
+                        unoptimized
+                        className="w-full max-h-60 object-contain"
+                    />
+                ) : (
+                    <a href={fileUrl} target="_blank" rel="noreferrer" className="underline">
+                        Download
+                    </a>
+                )
+            )}
+
+            {!fileUrl && doc.content && !compact && (
+                <div className={`relative h-40 rounded-2xl bg-amber-900 p-2 overflow-hidden ${isTrashed ? "opacity-60" : ""}`}>
+                    <p className="text-xs md:text-sm">
+                        {renderPlainText(doc.content)}
+                    </p>
+                </div>
+            )}
         </div>
-    )
+    );
 }

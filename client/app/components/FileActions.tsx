@@ -1,4 +1,5 @@
 "use client";
+import { IUser } from "@/src/types";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@heroui/react";
 import { useRouter } from "next/navigation";
 
@@ -53,6 +54,55 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
         api(`http://localhost:3001/api/documents/${fileId}`, 'DELETE', true);
         // Request parent switch back to Drive; if trash becomes empty, UI will reflect it
         if (onUpdated) onUpdated({ switchToDrive: true });
+    };
+    const handleCopy = () => {
+        (async () => {
+            try {
+                // fetch original document
+                const res = await fetch(`http://localhost:3001/api/documents/${fileId}`, {
+                    method: 'GET',
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
+                const data = await res.json();
+                const doc = data?.document || data;
+                if (!doc) {
+                    alert('Original document not found');
+                    return;
+                }
+
+                const newName = `Copy of ${doc.name || fileName}`;
+                const body = {
+                    name: newName,
+                    content: doc.content || "",
+                    isPublic: !!doc.isVisibleNonAuth,
+                    editors: (doc.editors || []).map((e: IUser) => (e.username ? e.username : String(e))).join(',')
+                };
+
+                const createRes = await fetch(`http://localhost:3001/api/upload`, {
+                    method: 'POST',
+                    headers: token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+
+                if (!createRes.ok) {
+                    let msg = `Create copy failed: ${createRes.status}`;
+                    try {
+                        const j = await createRes.json();
+                        if (j && j.message) msg += ` - ${j.message}`;
+                    } catch { }
+                    alert(msg);
+                    return;
+                }
+
+                alert(`Created copy: ${newName}`);
+                if (onUpdated) onUpdated();
+                try { router.refresh(); } catch { }
+            } catch (err) {
+                console.error(err);
+                alert('Could not create copy. See console for details.');
+            }
+        })();
     };
 
     const handleRename = () => {
@@ -144,6 +194,7 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
                 {!isTrashed ? (
                     <>
                         <DropdownItem key="rename" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleRename}>Rename</DropdownItem>
+                        <DropdownItem key="copy" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleCopy}>Create Copy</DropdownItem>
                         <DropdownItem key="share" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleShare} >Share</DropdownItem>
                         <DropdownItem key="link" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleLink}>Get Share Link</DropdownItem>
                         <DropdownItem key="trash" className="cursor-pointer m-1 px-1 text-center size-auto bg-yellow-300 rounded-md text-black" onClick={handleTrash}>Move to Trash</DropdownItem>

@@ -8,6 +8,7 @@ export interface IDocument {
   name: string
   owner: IUser
   createdAt: string
+  updatedAt: string
   filepath?: string
   content?: string
   editors?: IUser[]
