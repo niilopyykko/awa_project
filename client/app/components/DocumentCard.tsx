@@ -31,8 +31,8 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
         const fetchFile = async () => {
             if (!doc._id || !doc.filepath) return;
             try {
-                const res = await fetch(`${API}/uploads/${doc._id}`, {
-                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                const res = await fetch(`/api/proxy/uploads/${doc._id}`, {
+                    credentials: 'include'
                 });
                 if (!res.ok) {
                     console.error("Failed to fetch file", res.status);
@@ -48,7 +48,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
             }
         };
         fetchFile();
-    }, [doc._id, token]);
+    }, [doc._id]);
 
     const renderPlainText = (html: string) => {
         const div = document.createElement("div");

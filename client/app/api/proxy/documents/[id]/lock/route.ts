@@ -2,19 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
 
-export async function GET(req: NextRequest) {
-  try {
-    // extract document id from pathname (NextURL may not expose params)
-    const pathname = req.nextUrl.pathname || ''
-    const match = pathname.match(/\/documents\/([^\/]+)/)
-    const id = match ? match[1] : undefined
-    if (!id) return NextResponse.json({ message: 'Missing document id' }, { status: 400 })
-    // derive token from Authorization header or cookie
-    let token = req.headers.get('authorization') || ''
-    if (!token) {
-      const cookieToken = req.cookies.get('token')?.value
-      if (cookieToken) token = `Bearer ${cookieToken}`
-    }
+export async function GET(
+    req: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const { id } = params
+        let token = req.headers.get('authorization') || ''
+        if (!token) {
+            const cookieToken = req.cookies.get('token')?.value
+            if (cookieToken) token = `Bearer ${cookieToken}`
+        }
 
     const headers: Record<string, string> = {}
     if (token) headers.Authorization = token
@@ -32,19 +30,17 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    // extract document id from pathname (NextURL may not expose params)
-    const pathname = req.nextUrl.pathname || ''
-    const match = pathname.match(/\/documents\/([^\/]+)/)
-    const id = match ? match[1] : undefined
-    if (!id) return NextResponse.json({ message: 'Missing document id' }, { status: 400 })
-    let token = req.headers.get('authorization') || ''
-    if (!token) {
-      const cookieToken = req.cookies.get('token')?.value
-      if (cookieToken) token = `Bearer ${cookieToken}`
-    }
-
+export async function POST(
+    req: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const { id } = params
+        let token = req.headers.get('authorization') || ''
+        if (!token) {
+            const cookieToken = req.cookies.get('token')?.value
+            if (cookieToken) token = `Bearer ${cookieToken}`
+        }
     const headers: Record<string, string> = {}
     if (token) headers.Authorization = token
 
