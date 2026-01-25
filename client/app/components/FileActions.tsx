@@ -29,7 +29,7 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
         try {
             const res = await fetch(path, {
                 method,
-                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                credentials: 'include'
             });
             if (!res.ok) throw new Error(`Request failed: ${res.status}`);
             if (callOnUpdated && onUpdated) onUpdated();
@@ -42,33 +42,38 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
     // here we use web browser confirmation so no files are accidentally deleted
     const handleTrash = () => {
         if (!confirm(`Move "${fileName}" to trash?`)) return;
-        api(`${API}/documents/${fileId}/trash`, 'POST', true);
+        api(`/api/proxy/documents/${fileId}/trash`, 'POST', true);
     };
 
     const handleRestore = () => {
         if (!confirm(`Restore "${fileName}" from trash?`)) return;
-        api(`${API}/documents/${fileId}/restore`, 'POST', true);
+        api(`/api/proxy/documents/${fileId}/restore`, 'POST', true);
         // Ask parent to switch back to Drive view after restoring
         if (onUpdated) onUpdated({ switchToDrive: true });
     };
 
     const handleDeletePermanent = () => {
         if (!confirm(`Permanently delete "${fileName}"? This cannot be undone.`)) return;
-        api(`${API}/documents/${fileId}`, 'DELETE', true);
+        api(`/api/proxy/documents/${fileId}`, 'DELETE', true);
         // Request parent switch back to Drive; if trash becomes empty, UI will reflect it
         if (onUpdated) onUpdated({ switchToDrive: true });
     };
     const handleDownload = async () => {
         try {
-            const res = await fetch(`${API}/documents/${fileId}/pdf`, {
+            const res = await fetch(`/api/proxy/documents/${fileId}/pdf`, {
                 method: 'GET',
-                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                credentials: 'include'
             });
 
             if (!res.ok) {
                 let msg = `Download failed: ${res.status}`;
                 try {
-                    const j = await res.json(); if (j && j.message) msg += ` - ${j.message}`;
+                    const ct = res.headers.get('content-type') || ''
+                    if (ct.includes('application/json')) {
+                        const j = await res.json(); if (j && j.message) msg += ` - ${j.message}`;
+                    } else {
+                        const txt = await res.text(); if (txt) msg += ` - ${txt}`;
+                    }
                 } catch { }
                 throw new Error(msg);
             }
@@ -102,9 +107,9 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
         (async () => {
             try {
                 // fetch original document
-                const res = await fetch(`${API}/documents/${fileId}`, {
+                const res = await fetch(`/api/proxy/documents/${fileId}`, {
                     method: 'GET',
-                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    credentials: 'include'
                 });
                 if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
                 const data = await res.json();
@@ -122,9 +127,10 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
                     editors: (doc.editors || []).map((e: IUser) => (e.username ? e.username : String(e))).join(',')
                 };
 
-                const createRes = await fetch(`${API}/upload`, {
+                const createRes = await fetch(`/api/proxy/upload`, {
                     method: 'POST',
-                    headers: token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body),
                 });
 
@@ -153,9 +159,10 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
         if (!newName) return;
         (async () => {
             try {
-                const res = await fetch(`${API}/documents/${fileId}/rename`, {
+                const res = await fetch(`/api/proxy/documents/${fileId}/rename`, {
                     method: 'POST',
-                    headers: token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: newName })
                 });
                 if (!res.ok) throw new Error('Rename failed');
@@ -174,9 +181,10 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
         if (!collaborator || collaborator?.length <= 1) return;
 
         try {
-            const res = await fetch(`${API}/documents/${fileId}/share`, {
+            const res = await fetch(`/api/proxy/documents/${fileId}/share`, {
                 method: 'POST',
-                headers: token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ collaborator })
             });
             console.log(res)
@@ -203,9 +211,9 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
     const handleLink = async () => {
         // Read-only links are created at upload time; fetch document and read readOnlyLink
         try {
-            const res = await fetch(`${API}/documents/${fileId}`, {
+            const res = await fetch(`/api/proxy/documents/${fileId}`, {
                 method: 'GET',
-                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                credentials: 'include'
             });
             if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
             const data = await res.json();

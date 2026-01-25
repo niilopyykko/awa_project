@@ -7,7 +7,7 @@ export async function POST(
     { params }: { params: { id: string } }
 ) {
     try {
-        const { id } = params
+        const { id } = await params
         let token = req.headers.get('authorization') || ''
         if (!token) {
             const cookieToken = req.cookies.get('token')?.value

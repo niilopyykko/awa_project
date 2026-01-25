@@ -28,9 +28,26 @@ export default function Home() {
   const ownsTrashed = documents.some(d => d.trash && d.owner && ((d.owner as { username?: string }).username === user));
   const nonTrashedCount = documents.filter(d => !d.trash).length;
   const effectiveShowTrash = showTrash || (ownsTrashed && nonTrashedCount === 0);
+  // restore grid/list preference on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('awa:gridView')
+      if (stored !== null) setGridView(stored === 'true')
+    } catch {
+      // ignore (e.g., SSR or storage disabled)
+    }
+  }, []);
+
+  // persist grid/list preference whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('awa:gridView', String(gridView))
+    } catch {
+      // ignore
+    }
+  }, [gridView]);
 
   useEffect(() => {
-
     // filter by trash view first
     const shown = documents.filter(d => effectiveShowTrash ? Boolean(d.trash) : !Boolean(d.trash));
 
@@ -42,10 +59,10 @@ export default function Home() {
         const owner = ((d.owner as { username?: string })?.username || "").toLowerCase();
         const filename = (d.filepath || "").split("/").pop()?.split("\\").pop()?.toLowerCase() || "";
         const content = (d.content || "").replace(/<[^>]*>/g, "").toLowerCase();
-        const createdStr = new Date(d.createdAt).toLocaleString().toLowerCase(); // 24.1.2026
-        const createdIso = new Date(d.createdAt).toISOString().toLowerCase(); //    2026-01-24
-        const updatedStr = new Date(d.updatedAt).toLocaleString().toLowerCase(); // 24.1.2026
-        const updatedIso = new Date(d.updatedAt).toISOString().toLowerCase(); //    2026-01-24
+        const createdStr = new Date(d.createdAt).toLocaleString().toLowerCase();
+        const createdIso = new Date(d.createdAt).toISOString().toLowerCase();
+        const updatedStr = new Date(d.updatedAt).toLocaleString().toLowerCase();
+        const updatedIso = new Date(d.updatedAt).toISOString().toLowerCase();
         return (
           name.includes(q) || owner.includes(q) || filename.includes(q) || content.includes(q)
           || createdStr.includes(q) || createdIso.includes(q) || updatedStr.includes(q) || updatedIso.includes(q)

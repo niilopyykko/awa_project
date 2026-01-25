@@ -7,7 +7,7 @@ export async function GET(
     { params }: { params: { id: string } }
 ) {
     try {
-        const { id } = params
+        const { id } = await params
         let token = req.headers.get('authorization') || ''
         if (!token) {
             const cookieToken = req.cookies.get('token')?.value
@@ -25,6 +25,47 @@ export async function GET(
         return NextResponse.json(data, { status: res.status })
     } catch (err) {
         console.error('Document proxy error:', err)
+        return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    }
+}
+
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const { id } = await params
+
+        let token = req.headers.get('authorization') || ''
+        if (!token) {
+            const cookieToken = req.cookies.get('token')?.value
+            if (cookieToken) token = `Bearer ${cookieToken}`
+        }
+
+        const headers: Record<string, string> = {}
+        if (token) headers.Authorization = token
+
+        const res = await fetch(`${BACKEND_URL}/api/documents/${id}`, {
+            method: 'DELETE',
+            headers
+        })
+
+        // try JSON, but tolerate non-JSON responses
+        const data = await res.json().catch(async () => {
+            try {
+                const txt = await res.text()
+                return { text: txt }
+            } catch {
+                return null
+            }
+        })
+
+        const out = NextResponse.json(data, { status: res.status })
+        const setCookie = res.headers.get('set-cookie')
+        if (setCookie) out.headers.set('set-cookie', setCookie)
+        return out
+    } catch (err) {
+        console.error('Document DELETE proxy error:', err)
         return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
     }
 }

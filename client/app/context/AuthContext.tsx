@@ -60,6 +60,12 @@ export function AuthProvider({
   const logout = () => {
     // Call server-side logout to clear HttpOnly token cookie, then clear client state
     fetch('/api/proxy/logout', { method: 'POST', credentials: 'include' }).finally(() => {
+      try {
+        localStorage.clear()
+      } catch { }
+      try {
+        sessionStorage.clear()
+      } catch { }
       setToken(null)
       setUser(null)
       setAvatarUrl(null)
