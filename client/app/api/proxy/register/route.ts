@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://backend:3001'
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
 
 export async function POST(req: NextRequest) {
+  console.log("Register proxy hit!")
+
   try {
-    const body = await req.body
+    const formData = await req.formData()
+
+    const backendFormData = new FormData()
+    formData.forEach((value, key) => {
+      backendFormData.append(key, value)
+    })
 
     const res = await fetch(`${BACKEND_URL}/user/register`, {
       method: 'POST',
-      body, 
+      body: backendFormData
     })
 
     const data = await res.json()
