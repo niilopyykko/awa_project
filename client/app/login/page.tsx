@@ -47,7 +47,6 @@ export default function Login() {
         console.log(`Error when trying to login: ${error.message}`)
       }
     }
-    console.log(userPrompt)
   }
 
   return (

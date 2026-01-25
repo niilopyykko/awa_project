@@ -11,25 +11,23 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(null)
-  const [user, setUser] = useState<string | null>(null)
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setToken(localStorage.getItem('token'))
-    setUser(localStorage.getItem('user'))
-  }, [])
+  const [token, setToken] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? sessionStorage.getItem('token') : null
+  )
+  const [user, setUser] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? sessionStorage.getItem('user') : null
+  )
 
   const login = (t: string, u: string) => {
-    localStorage.setItem('token', t)
-    localStorage.setItem('user', u)
+    sessionStorage.setItem('token', t)
+    sessionStorage.setItem('user', u)
     setToken(t)
     setUser(u)
   }
 
   const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('user')
     setToken(null)
     setUser(null)
   }

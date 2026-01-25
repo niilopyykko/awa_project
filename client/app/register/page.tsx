@@ -35,6 +35,8 @@ export default function Register() {
 
       if (response.ok) {
         setUserPrompt('Registration successful, please log in')
+        login(data.token, username)
+        router.push("/")
       } else if (response.status == 403) {
         setUserPrompt("Username already in use")
       } else if (response.status == 400 && data.errors) {
