@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback } from "react";
 import { IDocument } from "../../src/types";
 import { useAuth } from "../context/AuthContext";
 
+const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
+const ORIGIN = API.replace(/\/api$/, '')
 
 export default function useDocuments() {
     const { token, user } = useAuth()
@@ -13,7 +15,7 @@ export default function useDocuments() {
   const getDocuments = useCallback(async () => {
     try {
       const response = await fetch(
-        token ? "http://localhost:3001/api/documents" : "http://localhost:3001/api/publicDocuments",
+        token ? `${API}/documents` : `${API}/publicDocuments`,
         {
           headers: token
             ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }

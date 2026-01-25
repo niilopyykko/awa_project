@@ -25,17 +25,27 @@ if (!fs.existsSync(uploadsDir)) {
 const app: Express = express()
 const port: number = parseInt(process.env.PORT as string) || 3001
 
-const mongoDB: string = "mongodb://127.0.0.1:27017/ProjectDB"
-mongoose.connect(mongoDB)
+const SERVER_PORT = parseInt(process.env.PORT || "3001");
+const SERVER_HOST = process.env.SERVER_HOST || "localhost";
+const SERVER_URL = process.env.SERVER_URL || `http://${SERVER_HOST}:${SERVER_PORT}`;
+// Client origin used for CORS (can be set to your frontend URL, e.g. http://localhost:3000)
+const CLIENT_URL = process.env.CLIENT_URL || process.env.CLIENT_ORIGIN || `http://localhost:3000`;
+
+const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/awa_db";
+
+mongoose.connect(MONGO_URI)
 mongoose.Promise = Promise
 const db: Connection = mongoose.connection
 
 db.on("error", console.error.bind(console, "MongoDB connection error"))
 
+const allowedOrigins = Array.from(new Set([
+    ...(CLIENT_URL ? [CLIENT_URL] : []),
+    ...(SERVER_URL ? [SERVER_URL] : []),
+]))
+
 const corsOptions: CorsOptions = {
-    origin: [
-        'http://localhost:3000'
-    ],
+    origin: allowedOrigins,
     credentials: true,
     optionsSuccessStatus: 200,
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -51,7 +61,7 @@ app.use("/api", documentsRouter)
 app.use("/", router)
 app.use("/user", userRouter)
 
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`)
-
-})
+app.listen(SERVER_PORT, () => {
+    console.log(`Server running on ${SERVER_URL}`);
+    console.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
+});

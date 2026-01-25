@@ -6,6 +6,9 @@ import { useAuth } from '../context/AuthContext'
 
 
 
+const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
+const ORIGIN = API.replace(/\/api$/, '')
+
 export default function Navbar() {
     const { token, user, logout } = useAuth() //Must have if we want login and logout to refresh navbar and drivepage
     const [menuOpen, setMenuOpen] = useState(false)
@@ -25,7 +28,7 @@ export default function Navbar() {
             // clear stale avatar while fetching (defer to avoid sync setState warnings)
             setTimeout(() => setProfilePic(null), 0)
             try {
-                const response = await fetch('http://localhost:3001/user/me/avatar', {
+                const response = await fetch(`${ORIGIN}/user/me/avatar`, {
                     headers: { Authorization: token ? `Bearer ${token}` : '' }
                 })
                 if (response.ok && mounted) {

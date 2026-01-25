@@ -6,6 +6,9 @@ import useDocuments from "../hooks/useDocuments";
 import { useAuth } from "../context/AuthContext";
 
 
+const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
+const ORIGIN = API.replace(/\/api$/, '')
+
 export default function Upload() {
   const { token: jwt } = useDocuments();
   const { logout } = useAuth();
@@ -37,7 +40,7 @@ export default function Upload() {
       formData.append('editors', editors)
       formData.append('isPublic', isPublic.toString())
 
-      const response = await fetch("http://localhost:3001/api/upload", {
+      const response = await fetch(`${API}/upload`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${jwt}`

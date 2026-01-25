@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from '../context/AuthContext'
 import { useEffect, useState } from "react";
 
+const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
+const ORIGIN = API.replace(/\/api$/, '')
+
 interface Props {
     doc: IDocument;
     currentUser?: string | null;
@@ -28,7 +31,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
         const fetchFile = async () => {
             if (!doc._id || !doc.filepath) return;
             try {
-                const res = await fetch(`http://localhost:3001/api/uploads/${doc._id}`, {
+                const res = await fetch(`${API}/uploads/${doc._id}`, {
                     headers: token ? { Authorization: `Bearer ${token}` } : {}
                 });
                 if (!res.ok) {

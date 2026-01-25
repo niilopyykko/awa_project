@@ -3,6 +3,9 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useAuth } from "../context/AuthContext"
 
+const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
+const ORIGIN = API.replace(/\/api$/, '')
+
 interface errors {
   location: string,
   msg: string,
@@ -26,14 +29,14 @@ export default function Register() {
     fd.append('password', password)
     if (profileFile) fd.append('profilePic', profileFile)
 
-    const response = await fetch('http://localhost:3001/user/register', {
+    const response = await fetch(`${ORIGIN}/user/register`, {
       method: 'POST',
       body: fd
     })
     const data = await response.json()
     console.log(response.status, data)
     if (response.status == 200) { //automatically log the user in in register was success
-      const loginResponse = await fetch("http://localhost:3001/user/login", {
+      const loginResponse = await fetch(`${ORIGIN}/user/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -4,6 +4,9 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuth } from "../context/AuthContext"
 
+const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
+const ORIGIN = API.replace(/\/api$/, '')
+
 export default function Login() {
   const router = useRouter()
   const { login } = useAuth()
@@ -15,7 +18,7 @@ export default function Login() {
 
   const fetchData = async (username: string, password: string) => {
     try {
-      const response = await fetch("http://localhost:3001/user/login", {
+      const response = await fetch(`${ORIGIN}/user/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

@@ -5,6 +5,9 @@ import { useEffect, useState, useRef, FormEvent } from 'react'
 import useDocuments from '../hooks/useDocuments'
 import { useAuth } from '../context/AuthContext'
 
+const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
+const ORIGIN = API.replace(/\/api$/, '')
+
 type HTMLContent = string
 
 type EditorProps = { //if editor is opened from drive browser, populate content and filename
@@ -76,7 +79,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 if (fromId) {
                     ; (async () => {
                         try {
-                            const response = await fetch(`http://localhost:3001/api/documents/${fromId}/lock`, {
+                            const response = await fetch(`${API}/documents/${fromId}/lock`, {
                                 method: 'GET',
                                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                             })
@@ -143,7 +146,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
             if (lockPollInterval.current) return
             lockPollInterval.current = window.setInterval(async () => {
                 try {
-                    const resp = await fetch(`http://localhost:3001/api/documents/${documentId}/lock`, {
+                    const resp = await fetch(`${API}/documents/${documentId}/lock`, {
                         method: 'GET',
                         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                     })
@@ -154,7 +157,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                         if (!js.locked) {
                             // lock released — fetch latest document and compare
                             try {
-                                const dresp = await fetch(`http://localhost:3001/api/documents/${documentId}`, {
+                                const dresp = await fetch(`${API}/documents/${documentId}`, {
                                     method: 'GET',
                                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                                 })
@@ -178,7 +181,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
 
                             // Try to acquire the lock now that it's released
                             try {
-                                const lockResp = await fetch(`http://localhost:3001/api/documents/${documentId}/lock`, {
+                                const lockResp = await fetch(`${API}/documents/${documentId}/lock`, {
                                     method: 'POST',
                                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                                 })
@@ -198,7 +201,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                                     }
                                     renewInterval.current = window.setInterval(async () => {
                                         try {
-                                            await fetch(`http://localhost:3001/api/documents/${documentId}/renewLock`, {
+                                            await fetch(`${API}/documents/${documentId}/renewLock`, {
                                                 method: 'POST',
                                                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                                             })
@@ -241,7 +244,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
 
             ; (async () => {
                 try {
-                    const resp = await fetch(`http://localhost:3001/api/documents/${documentId}/lock`, {
+                    const resp = await fetch(`${API}/documents/${documentId}/lock`, {
                         method: 'POST',
                         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                     })
@@ -263,7 +266,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                         // start renew interval (every 5min)
                         renewInterval.current = window.setInterval(async () => {
                             try {
-                                await fetch(`http://localhost:3001/api/documents/${documentId}/renewLock`, {
+                                await fetch(`${API}/documents/${documentId}/renewLock`, {
                                     method: 'POST',
                                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                                 })
@@ -280,7 +283,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
         const beforeUnload = async () => {
             if (!weOwnLock.current || !documentId) return
             try {
-                await fetch(`http://localhost:3001/api/documents/${documentId}/unlock`, {
+                await fetch(`${API}/documents/${documentId}/unlock`, {
                     method: 'POST',
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                 })
@@ -302,7 +305,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 ; (async () => {
                     if (weOwnLock.current && documentId) {
                         try {
-                            await fetch(`http://localhost:3001/api/documents/${documentId}/unlock`, {
+                            await fetch(`${API}/documents/${documentId}/unlock`, {
                                 method: 'POST',
                                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                             })
@@ -346,7 +349,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 formData.append('documentId', documentId)
             } // send database id back to backend for checking if item already exists in db 
 
-            const response = await fetch("http://localhost:3001/api/upload", {
+            const response = await fetch(`${API}/upload`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`
@@ -363,7 +366,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 try {
                     const idToUnlock = body?.document?._id ?? documentId
                     if (idToUnlock) {
-                        await fetch(`http://localhost:3001/api/documents/${idToUnlock}/unlock`, {
+                        await fetch(`${API}/documents/${idToUnlock}/unlock`, {
                             method: 'POST',
                             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                         })

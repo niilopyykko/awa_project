@@ -4,6 +4,8 @@ import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 
+const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
+const ORIGIN = API.replace(/\/api$/, '')
 interface FileActionsProps {
     fileId: string;
     fileName: string;
@@ -40,25 +42,25 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
     // here we use web browser confirmation so no files are accidentally deleted
     const handleTrash = () => {
         if (!confirm(`Move "${fileName}" to trash?`)) return;
-        api(`http://localhost:3001/api/documents/${fileId}/trash`, 'POST', true);
+        api(`${API}/documents/${fileId}/trash`, 'POST', true);
     };
 
     const handleRestore = () => {
         if (!confirm(`Restore "${fileName}" from trash?`)) return;
-        api(`http://localhost:3001/api/documents/${fileId}/restore`, 'POST', true);
+        api(`${API}/documents/${fileId}/restore`, 'POST', true);
         // Ask parent to switch back to Drive view after restoring
         if (onUpdated) onUpdated({ switchToDrive: true });
     };
 
     const handleDeletePermanent = () => {
         if (!confirm(`Permanently delete "${fileName}"? This cannot be undone.`)) return;
-        api(`http://localhost:3001/api/documents/${fileId}`, 'DELETE', true);
+        api(`${API}/documents/${fileId}`, 'DELETE', true);
         // Request parent switch back to Drive; if trash becomes empty, UI will reflect it
         if (onUpdated) onUpdated({ switchToDrive: true });
     };
     const handleDownload = async () => {
         try {
-            const res = await fetch(`http://localhost:3001/api/documents/${fileId}/pdf`, {
+            const res = await fetch(`${API}/documents/${fileId}/pdf`, {
                 method: 'GET',
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
@@ -100,7 +102,7 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
         (async () => {
             try {
                 // fetch original document
-                const res = await fetch(`http://localhost:3001/api/documents/${fileId}`, {
+                const res = await fetch(`${API}/documents/${fileId}`, {
                     method: 'GET',
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                 });
@@ -120,7 +122,7 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
                     editors: (doc.editors || []).map((e: IUser) => (e.username ? e.username : String(e))).join(',')
                 };
 
-                const createRes = await fetch(`http://localhost:3001/api/upload`, {
+                const createRes = await fetch(`${API}/upload`, {
                     method: 'POST',
                     headers: token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body),
@@ -151,7 +153,7 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
         if (!newName) return;
         (async () => {
             try {
-                const res = await fetch(`http://localhost:3001/api/documents/${fileId}/rename`, {
+                const res = await fetch(`${API}/documents/${fileId}/rename`, {
                     method: 'POST',
                     headers: token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: newName })
@@ -172,7 +174,7 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
         if (!collaborator || collaborator?.length <= 1) return;
 
         try {
-            const res = await fetch(`http://localhost:3001/api/documents/${fileId}/share`, {
+            const res = await fetch(`${API}/documents/${fileId}/share`, {
                 method: 'POST',
                 headers: token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ collaborator })
@@ -201,7 +203,7 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
     const handleLink = async () => {
         // Read-only links are created at upload time; fetch document and read readOnlyLink
         try {
-            const res = await fetch(`http://localhost:3001/api/documents/${fileId}`, {
+            const res = await fetch(`${API}/documents/${fileId}`, {
                 method: 'GET',
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
