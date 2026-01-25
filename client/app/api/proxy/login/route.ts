@@ -5,12 +5,13 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
-    const backendFormData = new FormData()
-    formData.forEach((value, key) => backendFormData.append(key, value))
+    const username = formData.get('username')
+    const password = formData.get('password')
 
     const res = await fetch(`${BACKEND_URL}/user/login`, {
       method: 'POST',
-      body: backendFormData
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
     })
 
     const data = await res.json()
