@@ -39,17 +39,33 @@ const db: Connection = mongoose.connection
 
 db.on("error", console.error.bind(console, "MongoDB connection error"))
 
-const allowedOrigins = Array.from(new Set([
-    ...(CLIENT_URL ? [CLIENT_URL] : []),
-    ...(SERVER_URL ? [SERVER_URL] : []),
-]))
+const allowedOrigins = (process.env.CLIENT_URLS || "http://localhost:3000,http://localhost:3001")
+  .split(",")
+  .map(u => u.trim());
 
 const corsOptions: CorsOptions = {
-    origin: allowedOrigins,
-    credentials: true,
-    optionsSuccessStatus: 200,
-    allowedHeaders: ['Content-Type', 'Authorization']
-}
+  origin: (origin, callback) => {
+    if (!origin) {
+      console.log("CORS: internal request (no origin) allowed");
+      return callback(null, true);
+    }
+
+    console.log("CORS: request from origin:", origin);
+
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    if (origin.startsWith("http://awa_frontend") || origin.startsWith("http://backend")) {
+      console.log("CORS: allowed internal Docker origin", origin);
+      return callback(null, true);
+    }
+
+    console.log("CORS: blocked origin", origin);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 
 app.use(cors(corsOptions))
 app.use(express.json())
