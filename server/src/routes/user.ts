@@ -6,7 +6,7 @@ import { User, IUser } from '../models/User'
 import path from 'path'
 import fs from 'fs'
 import upload from '../middleware/multer-config'
-import { validateToken } from '../middleware/validateToken'
+import { CustomRequest, validateToken } from '../middleware/validateToken'
 
 const router: Router = Router()
 
@@ -45,9 +45,25 @@ router.post("/register",
                 userData.profilePic = req.file.path
             }
 
-            await User.create(userData)
+            const createdUser = await User.create(userData)
 
-            return res.status(200).json({ message: "User registered successfully" })
+            const jwtPayload: JwtPayload = {
+                id: createdUser._id,
+                username: createdUser.username
+            }
+            const token: string = jwt.sign(jwtPayload, process.env.SECRET as string, { expiresIn: '24h' })
+            // set HttpOnly token cookie and a non-HttpOnly username cookie
+            const cookieOptions = {
+                httpOnly: true,
+                path: '/',
+                sameSite: 'lax' as const,
+                secure: process.env.NODE_ENV === 'production'
+            }
+            res.cookie('token', token, cookieOptions)
+            // expose username in a readable cookie for SSR display
+            res.cookie('user', createdUser.username, { path: '/', sameSite: 'lax' })
+
+            return res.status(200).json({ message: "User registered successfully", token })
 
         } catch (error: any) {
             console.error(`Error during registration: ${error}`)
@@ -58,23 +74,55 @@ router.post("/register",
 )
 
 // Return current authenticated user's profile
-router.get('/me/avatar', validateToken, async (req: Request, res: Response) => {
+router.get('/me/avatar', validateToken, async (req: CustomRequest, res: Response) => {
     try {
-        const userId = (req as any).user!.id;
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).send('User not found');
+        const userId = req.user?.id;
+        if (!userId) return res.status(401).send('User ID missing in token');
 
-        if (!user.profilePic) return res.status(404).send('No profile image');
+        const user = await User.findById(userId);
+        if (!user) {
+            console.warn('[Avatar] User not found for ID:', userId);
+            return res.status(404).send('User not found');
+        }
+
+        if (!user.profilePic) {
+            console.warn('[Avatar] User has no profilePic:', userId);
+            return res.status(404).send('No profile image');
+        }
 
         const profilePicPath = path.join(process.cwd(), 'uploads', path.basename(user.profilePic));
-        if (!fs.existsSync(profilePicPath)) return res.status(404).send('File not found');
+        if (!fs.existsSync(profilePicPath)) {
+            console.warn('[Avatar] File not found:', profilePicPath);
+            return res.status(404).send('File not found');
+        }
 
         return res.sendFile(profilePicPath);
     } catch (err) {
-        console.error(err);
+        console.error('[Avatar] Internal server error:', err);
         return res.status(500).send('Internal server error');
     }
 });
+
+router.post("/me/avatar", validateToken, upload.single("profilePic"), async (req: CustomRequest, res: Response) => {
+  try {
+    const userId = req.user?.id
+    if (!userId) return res.status(401).json({ message: "User not found in token" })
+
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" })
+
+    const user = await User.findById(userId)
+    if (!user) return res.status(404).json({ message: "User not found" })
+
+    user.profilePic = req.file.path
+    await user.save()
+
+    res.status(200).json({ message: "Profile picture updated" })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: "Internal server error" })
+  }
+})
+
 
 router.post("/login",
     body("username").trim().escape(),
@@ -95,6 +143,14 @@ router.post("/login",
                     username: user.username
                 }
                 const token: string = jwt.sign(jwtPayload, process.env.SECRET as string, { expiresIn: "24h" })
+                const cookieOptions = {
+                    httpOnly: true,
+                    path: '/',
+                    sameSite: 'lax' as const,
+                    secure: process.env.NODE_ENV === 'production'
+                }
+                res.cookie('token', token, cookieOptions)
+                res.cookie('user', user.username, { path: '/', sameSite: 'lax' })
 
                 return res.status(200).json({ success: true, token })
             }

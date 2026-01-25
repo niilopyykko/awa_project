@@ -4,6 +4,7 @@ import fs from "fs"
 import router from "./src/routes/index"
 import documentsRouter from "./src/routes/documents"
 import userRouter from "./src/routes/user"
+import logoutRouter from "./src/routes/logout"
 import morgan from "morgan"
 import mongoose, { Connection } from 'mongoose'
 import dotenv from "dotenv"
@@ -76,6 +77,7 @@ app.use(morgan("dev"))
 app.use("/api", documentsRouter)
 app.use("/", router)
 app.use("/user", userRouter)
+app.use("/user", logoutRouter)
 
 app.listen(SERVER_PORT, () => {
     console.log(`Server running on ${SERVER_URL}`);

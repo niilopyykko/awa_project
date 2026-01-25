@@ -1,58 +1,63 @@
 'use client'
-import Image from 'next/image';
-import Link from 'next/link'
+
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-
-
-
-const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
-const ORIGIN = API.replace(/\/api$/, '')
+import Link from 'next/link'
+import Image from 'next/image'
+import { useRef } from 'react'
 
 export default function Navbar() {
-    const { token, user, logout } = useAuth() //Must have if we want login and logout to refresh navbar and drivepage
+    const { token, user, avatarUrl, logout } = useAuth()
+    const [profilePic, setProfilePic] = useState<string>(avatarUrl ?? '/vercel.svg')
+    const objectUrlRef = useRef<string | null>(null)
     const [menuOpen, setMenuOpen] = useState(false)
-    const [profilePic, setProfilePic] = useState<string | null>(null)
 
+    // Fetch avatar when `user` changes (we rely on HttpOnly token cookie on server)
     useEffect(() => {
-        if (!token) {
-            // clear any previously shown avatar when logged out
-            setTimeout(() => setProfilePic(null), 0)
+        if (!user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setProfilePic('/vercel.svg')
             return
         }
 
-        let mounted = true
-        let currentUrl: string = '';
-
-        (async () => {
-            // clear stale avatar while fetching (defer to avoid sync setState warnings)
-            setTimeout(() => setProfilePic(null), 0)
+        const fetchAvatar = async () => {
             try {
-                const response = await fetch(`${ORIGIN}/user/me/avatar`, {
-                    headers: { Authorization: token ? `Bearer ${token}` : '' }
-                })
-                if (response.ok && mounted) {
-                    const blob = await response.blob();
-                    const url = URL.createObjectURL(blob);
-                    currentUrl = url
-                    setProfilePic(url);
-                } else {
-                    // ensure we don't keep a stale avatar if server returns no image
-                    if (mounted) setTimeout(() => setProfilePic(null), 0)
-                }
-            } catch (err) {
-                console.error('Failed to fetch profile', err)
-                if (mounted) setTimeout(() => setProfilePic(null), 0)
-            }
-        })()
+                const res = await fetch('/api/proxy/avatar', {
+                    credentials: 'include',
 
-        return () => {
-            mounted = false
-            if (currentUrl) {
-                try { URL.revokeObjectURL(currentUrl) } catch { }
+                })
+
+                if (!res.ok) {
+                    const text = await res.text().catch(() => null)
+                    console.error('Avatar fetch failed', res.status, text)
+                    setProfilePic('/vercel.svg')
+                    return
+                }
+
+                const blob = await res.blob()
+                const newUrl = URL.createObjectURL(blob)
+                // revoke previous
+                if (objectUrlRef.current && objectUrlRef.current.startsWith('blob:')) {
+                    URL.revokeObjectURL(objectUrlRef.current)
+                }
+                objectUrlRef.current = newUrl
+                setProfilePic(newUrl)
+            } catch (err) {
+                console.error('Failed to fetch avatar', err)
+                setProfilePic('/vercel.svg')
             }
         }
-    }, [token])
+
+        fetchAvatar()
+        return () => {
+            // revoke any created object URL on cleanup
+            if (objectUrlRef.current && objectUrlRef.current.startsWith('blob:')) {
+                URL.revokeObjectURL(objectUrlRef.current)
+                objectUrlRef.current = null
+            }
+        }
+    }, [user])
+
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white h-16">
@@ -78,18 +83,19 @@ export default function Navbar() {
 
                 {/* Right side auth (desktop) */}
                 <div className="ml-auto hidden md:flex gap-4 items-center">
-                    {!token && <Link href="/login" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Log in</Link>}
-                    {!token && <Link href="/register" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Register</Link>}
+                    {!user && <Link href="/login" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Log in</Link>}
+                    {!user && <Link href="/register" className='bg-blue-500 p-2 rounded hover:bg-blue-700 active:bg-blue-800'>Register</Link>}
 
-                    {token && (
+                    {user && (
                         <>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 bg-blue-700 rounded-2xl p-1 px-2">
                                 {profilePic ? (<Image
-                                    src={profilePic}
+                                    src={profilePic || '/vercel.svg'}
                                     alt="Profile Avatar"
                                     width={40}
                                     height={40}
                                     className="rounded-full"
+                                    unoptimized
                                 />) : (null)}
                                 <span className="text-sm">
                                     Logged in as <span className="font-semibold">{user}</span>
@@ -124,18 +130,18 @@ export default function Navbar() {
                         Upload
                     </Link>
 
-                    {!token && (
+                    {!user && (
                         <Link href="/login" onClick={() => setMenuOpen(false)}>
                             Log in
                         </Link>
                     )}
-                    {!token && (
+                    {!user && (
                         <Link href="/register" onClick={() => setMenuOpen(false)}>
                             Register
                         </Link>
                     )}
 
-                    {token && (<>
+                    {user && (<>
                         <div className="flex items-center gap-3 bg-blue-500 px-3 py-1 rounded-full shadow">
                             {profilePic && (
                                 <Image

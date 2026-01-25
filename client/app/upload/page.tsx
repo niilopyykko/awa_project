@@ -6,11 +6,10 @@ import useDocuments from "../hooks/useDocuments";
 import { useAuth } from "../context/AuthContext";
 
 
-const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
-const ORIGIN = API.replace(/\/api$/, '')
+// Use the node proxy for uploads
 
 export default function Upload() {
-  const { token: jwt } = useDocuments();
+  const { user } = useDocuments();
   const { logout } = useAuth();
 
 
@@ -31,21 +30,15 @@ export default function Upload() {
         alert("Please select a file")
         return
       }
-      if (!jwt) {
-        console.error('No token available')
-        return
-      }
       const formData = new FormData()
       formData.append('file', file)
       formData.append('editors', editors)
       formData.append('isPublic', isPublic.toString())
 
-      const response = await fetch(`${API}/upload`, {
+      const response = await fetch(`/api/proxy/upload`, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${jwt}`
-        },
-        body: formData
+        credentials: 'include',
+        body: formData,
       })
 
       if (response.ok) {
@@ -53,13 +46,16 @@ export default function Upload() {
         alert('File uploaded successfully!')
         const data = await response.json()
         setViewLink(data.readOnlyLink)
-
-
-
       } else {
-        const error = await response.json()
-        console.error('Upload failed:', error)
-        if (error.message === 'Access denied, missing token') {
+        let errorBody = null
+        try {
+          errorBody = await response.json()
+        } catch {
+          errorBody = await response.text()
+        }
+        console.error('Upload failed:', errorBody)
+        const msg = typeof errorBody === 'string' ? errorBody : errorBody?.message
+        if (msg && msg.toLowerCase().includes('access denied')) {
           alert('Your session has expired. Please log in again.')
           logout()
           window.location.href = '/login'
@@ -82,7 +78,7 @@ export default function Upload() {
   return (
     <div className="p-6">
       <div className="mx-auto max-w-3xl">
-        {!jwt ? (
+        {!user ? (
           <div className='flex flex-col bg-fuchsia-300 rounded-md text-center p-2'>
             <p className="text-gray-600 text-2xl">Please login to see Upload</p>
             <Link href="/login" className="bg-amber-500 border-2 p-1 m-2 border-amber-50 text-amber-900 text-lg">Log in</Link>

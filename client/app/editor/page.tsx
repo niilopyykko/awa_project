@@ -20,7 +20,7 @@ type EditorProps = { //if editor is opened from drive browser, populate content 
 }
 
 export default function Editor({ driveContent, driveName, driveEditors, driveCommenter, driveViewer }: EditorProps) {
-    const { token } = useDocuments();
+    const { user } = useDocuments();
     const { logout } = useAuth();
     const [content, setContent] = useState<string>(driveContent ?? '<p>Text Content here...</p>')
     const [docName, setDocName] = useState<string>(driveName ?? '')
@@ -79,9 +79,8 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 if (fromId) {
                     ; (async () => {
                         try {
-                            const response = await fetch(`${API}/documents/${fromId}/lock`, {
-                                method: 'GET',
-                                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                            const response = await fetch(`/api/proxy/documents/${fromId}/lock`, {
+                                method: 'GET'
                             })
                             if (response.ok) {
                                 const js = await response.json()
@@ -104,7 +103,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
         } catch {
             /* ignore if sessionStorage not available */
         }
-    }, [token])
+    }, [])
 
     // Autosave editor fields to sessionStorage
     useEffect(() => {
@@ -146,9 +145,8 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
             if (lockPollInterval.current) return
             lockPollInterval.current = window.setInterval(async () => {
                 try {
-                    const resp = await fetch(`${API}/documents/${documentId}/lock`, {
-                        method: 'GET',
-                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    const resp = await fetch(`/api/proxy/documents/${documentId}/lock`, {
+                        method: 'GET'
                     })
                     if (resp.ok) {
                         // CHECK IF DOCUMENT HAS HAD CHANGES DURING WAIT
@@ -157,9 +155,8 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                         if (!js.locked) {
                             // lock released — fetch latest document and compare
                             try {
-                                const dresp = await fetch(`${API}/documents/${documentId}`, {
-                                    method: 'GET',
-                                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                                const dresp = await fetch(`/api/proxy/documents/${documentId}`, {
+                                    method: 'GET'
                                 })
                                 if (dresp.ok) {
                                     const djson = await dresp.json()
@@ -181,9 +178,8 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
 
                             // Try to acquire the lock now that it's released
                             try {
-                                const lockResp = await fetch(`${API}/documents/${documentId}/lock`, {
-                                    method: 'POST',
-                                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                                const lockResp = await fetch(`/api/proxy/documents/${documentId}/lock`, {
+                                    method: 'POST'
                                 })
                                 if (lockResp.status === 409) {
                                     const js2 = await lockResp.json()
@@ -201,9 +197,8 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                                     }
                                     renewInterval.current = window.setInterval(async () => {
                                         try {
-                                            await fetch(`${API}/documents/${documentId}/renewLock`, {
-                                                method: 'POST',
-                                                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                                            await fetch(`/api/proxy/documents/${documentId}/renewLock`, {
+                                                method: 'POST'
                                             })
                                         } catch (err) {
                                             console.error('Failed to renew lock', err)
@@ -235,18 +230,17 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 lockPollInterval.current = null
             }
         }
-    }, [isLocked, documentId, token, content])
+    }, [isLocked, documentId, content])
 
 
     // Acquire lock when we have a documentId and token. Keep it alive and release on unload.
     useEffect(() => {
-        if (!documentId || !token) return
+        if (!documentId || !user) return
 
             ; (async () => {
                 try {
-                    const resp = await fetch(`${API}/documents/${documentId}/lock`, {
-                        method: 'POST',
-                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    const resp = await fetch(`/api/proxy/documents/${documentId}/lock`, {
+                        method: 'POST'
                     })
 
                     if (resp.status === 409) {
@@ -266,9 +260,8 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                         // start renew interval (every 5min)
                         renewInterval.current = window.setInterval(async () => {
                             try {
-                                await fetch(`${API}/documents/${documentId}/renewLock`, {
-                                    method: 'POST',
-                                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                                await fetch(`/api/proxy/documents/${documentId}/renewLock`, {
+                                    method: 'POST'
                                 })
                             } catch (err) {
                                 console.error('Failed to renew lock', err)
@@ -283,9 +276,8 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
         const beforeUnload = async () => {
             if (!weOwnLock.current || !documentId) return
             try {
-                await fetch(`${API}/documents/${documentId}/unlock`, {
-                    method: 'POST',
-                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                await fetch(`/api/proxy/documents/${documentId}/unlock`, {
+                    method: 'POST'
                 })
             } catch {
                 // ignore
@@ -305,9 +297,8 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 ; (async () => {
                     if (weOwnLock.current && documentId) {
                         try {
-                            await fetch(`${API}/documents/${documentId}/unlock`, {
-                                method: 'POST',
-                                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                            await fetch(`/api/proxy/documents/${documentId}/unlock`, {
+                                method: 'POST'
                             })
                         } catch (err) {
                             console.error('Failed to unlock on unmount', err)
@@ -315,7 +306,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                     }
                 })()
         }
-    }, [documentId, token])
+    }, [documentId, user])
 
 
 
@@ -333,8 +324,8 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 alert("Please input text")
                 return
             }
-            if (!token) {
-                console.error('No token available')
+            if (!user) {
+                console.error('No user available')
                 return
             }
             const formData = new FormData()
@@ -349,26 +340,28 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 formData.append('documentId', documentId)
             } // send database id back to backend for checking if item already exists in db 
 
-            const response = await fetch(`${API}/upload`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                },
+            const response = await fetch('/api/proxy/upload', {
+                method: 'POST',
                 body: formData
             })
 
             if (response.ok) {
                 console.log('File uploaded successfully')
                 alert('File uploaded successfully!')
-                const body = await response.json()
+                let body = null
+                try {
+                    body = await response.json()
+                } catch {
+                    // backend returned non-JSON (e.g. text/HTML) even on OK — tolerate it
+                    body = null
+                }
 
                 // If we were editing an existing document, release the lock after save
                 try {
                     const idToUnlock = body?.document?._id ?? documentId
                     if (idToUnlock) {
-                        await fetch(`${API}/documents/${idToUnlock}/unlock`, {
-                            method: 'POST',
-                            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                        await fetch(`/api/proxy/documents/${idToUnlock}/unlock`, {
+                            method: 'POST'
                         })
                         weOwnLock.current = false
                         if (renewInterval.current) {
@@ -381,9 +374,19 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 }
 
             } else {
-                const error = await response.json()
-                console.error('Upload failed:', error)
-                if (error.message === 'Access denied, missing token') {
+                let errorBody = null
+                try {
+                    errorBody = await response.json()
+                } catch {
+                    try {
+                        errorBody = await response.text()
+                    } catch {
+                        errorBody = null
+                    }
+                }
+                console.error('Upload failed:', errorBody)
+                const msg = typeof errorBody === 'string' ? errorBody : errorBody?.message
+                if (msg && msg.toLowerCase().includes('access denied')) {
                     alert('Your session has expired. Please log in again.')
                     logout()
                     window.location.href = '/login'
@@ -400,7 +403,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
         <div className="max-w-4xl mx-auto ">
             <div className="mb-8 shadow-md">
                 <>
-                    {!token ? (
+                    {!user ? (
                         <div className='flex flex-col bg-fuchsia-300 rounded-md text-center p-2'>
                             <p className="text-gray-600 text-2xl">Please login to see text editor</p>
                             <Link href="/login" className="bg-amber-500 border-2 p-1 m-2 border-amber-50 text-amber-900 text-lg">Log in</Link>

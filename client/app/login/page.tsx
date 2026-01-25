@@ -23,11 +23,11 @@ export default function Login() {
       fd.append('password', password)
       const response = await fetch('/api/proxy/login', {
         method: 'POST',
-        body: fd
+        body: fd,
+        credentials: 'include'
       })
 
       const data = await response.json()
-      console.log(response.status, data)
 
       if (!response.ok) {
         if (response.status === 401) { setUserPrompt("Login failed, wrong password or user doesn't exist") }
@@ -36,7 +36,7 @@ export default function Login() {
         else throw new Error("Error fetching data")
       }
 
-      if (data.token) {
+      if (response.ok) {
         login(data.token, username)
         router.push("/")
       }

@@ -9,16 +9,26 @@ export interface CustomRequest extends Request {
 }
 
 export const validateToken = (req: CustomRequest, res: Response, next: NextFunction) => {
+    const authHeader = req.header('authorization');
 
-    const token: string | undefined = req.header('authorization')?.split(" ")[1]
+    if (!authHeader) {
+        console.warn('[Auth] Missing Authorization header');
+        return res.status(401).json({ message: "Access denied, missing Authorization header" });
+    }
 
-    if (!token) return res.status(401).json({ message: "Access denied, missing token" })
+    const token = authHeader.split(" ")[1];
+    if (!token) {
+        console.warn('[Auth] Token missing in Authorization header');
+        return res.status(401).json({ message: "Access denied, missing token" });
+    }
+
     try {
-        const verified: JwtPayload = jwt.verify(token, process.env.SECRET as string) as JwtPayload
-        req.user = verified
-        next()
-
+        req.user = jwt.verify(token, process.env.SECRET as string) as JwtPayload;
+        // Only log successful verification
+        console.log('[Auth] Token verified for user ID:', req.user.id);
+        next();
     } catch (error: any) {
-        res.status(400).json({ message: "Access denied, missing token" })
+        console.error('[Auth] JWT verification failed:', error.message);
+        return res.status(401).json({ message: "Invalid or expired token" });
     }
 }

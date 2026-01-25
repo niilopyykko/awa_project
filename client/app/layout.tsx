@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css"
 import Navbar from "./components/Navbar";
 import { AuthProvider } from "./context/AuthContext";
+import { cookies } from "next/headers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,11 +20,24 @@ export const metadata: Metadata = {
   description: "AMAZIN APPLICATION",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
+
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let serverToken: string | null = null
+  let serverUser: string | null = null
+  try {
+    const cookieStore = await cookies()
+    // cookies() may return a different shape in some runtimes; guard access
+    serverToken = cookieStore.get?.('token')?.value ?? null
+    serverUser = cookieStore.get?.('user')?.value ?? null
+  } catch {
+    // Not running in a server context or cookies unavailable — leave as null
+    serverToken = null
+    serverUser = null
+  }
   return (
     <html lang="en">
       <head>
@@ -32,7 +46,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen w-full overflow-x-hidden`}
       >
-        <AuthProvider>
+        <AuthProvider serverToken={serverToken} serverUser={serverUser}>
           <Navbar />
           <main style={{ paddingTop: '4rem', minHeight: 'calc(100vh - 4rem)' }}>
             {children}

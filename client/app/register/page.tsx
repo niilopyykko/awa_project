@@ -13,42 +13,56 @@ interface errors {
 
 export default function Register() {
   const router = useRouter()
-  const { login } = useAuth()
+  const { refresh } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [profileFile, setProfileFile] = useState<File | null>(null)
   const [userPrompt, setUserPrompt] = useState<string | string[]>('')
 
   const submitRegister = async () => {
-    const fd = new FormData()
-    fd.append('username', username)
-    fd.append('password', password)
-    if (profileFile) fd.append('profilePic', profileFile)
-
     try {
-      const response = await fetch('/api/proxy/register', {
-        method: 'POST',
-        body: fd
+      const response = await fetch("/api/proxy/register-json", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include'
       })
 
       const data = await response.json()
+      console.log("Register response:", data)
 
-      if (response.ok) {
-        setUserPrompt('Registration successful, please log in')
-        login(data.token, username)
-        router.push("/")
-      } else if (response.status == 403) {
-        setUserPrompt("Username already in use")
-      } else if (response.status == 400 && data.errors) {
-        setUserPrompt(data.errors.map((e: errors) => e.msg))
-      } else {
-        setUserPrompt("Internal server error")
+      if (!response.ok) {
+        setUserPrompt(data.message || "Registration failed")
+        return
       }
+
+      // Backend set cookies via proxy — refresh AuthContext from cookies
+      try { await refresh() } catch { }
+      // safe navigation: call a fetch to trigger cookie presence, then refresh via location reload
+      await fetch('/api/proxy/register-json', { method: 'GET', credentials: 'include' }).catch(() => null)
+      router.push('/')
+
+      if (profileFile) {
+        const fd = new FormData()
+        fd.append("profilePic", profileFile)
+
+        const avatarRes = await fetch("/api/proxy/avatar-upload", {
+          method: "POST",
+          credentials: 'include',
+          body: fd
+        })
+
+        const avatarData = await avatarRes.json()
+        console.log("Avatar upload response:", avatarData)
+      }
+
+      router.push("/")
     } catch (err) {
       console.error(err)
       setUserPrompt("Network error")
     }
   }
+
 
   return (
     <div className="w-full min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center">
