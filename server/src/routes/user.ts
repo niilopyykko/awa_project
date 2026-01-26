@@ -50,7 +50,8 @@ router.post(
       const hash = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
       const userData: Partial<IUser> = { username, password: hash }
 
-      if (req.file?.path) userData.profilePic = req.file.path
+      // Store only filename (not full path) for consistency across environments
+      if (req.file?.filename) userData.profilePic = req.file.filename
 
       const createdUser = await User.create(userData)
 
@@ -69,12 +70,28 @@ router.post(
 // Get current user's avatar
 router.get('/me/avatar', validateToken, async (req: CustomRequest, res: Response) => {
   try {
-    const user = await User.findById(req.user?.id)
-    if (!user?.profilePic) return res.status(404).send('No profile image')
+    const userId = req.user?.id as string | undefined
+    if (!userId) {
+      console.warn('[avatar] Missing user id in token')
+      return res.status(401).send('Unauthorized')
+    }
+    const user = await User.findById(userId)
+    if (!user) {
+      console.warn('[avatar] User not found for id', userId)
+      return res.status(404).send('User not found')
+    }
+    if (!user.profilePic) {
+      console.warn('[avatar] No profilePic set for user', user.username)
+      return res.status(404).send('No profile image')
+    }
 
-    const uploadsDir = process.env.UPLOAD_DIR || "/uploads";
+    const uploadsDir = process.env.UPLOAD_DIR || "./uploads";
     const profilePicPath = path.join(uploadsDir, path.basename(user.profilePic));
-    if (!fs.existsSync(profilePicPath)) return res.status(404).send('File not found')
+    console.log('[avatar] Serving file:', profilePicPath)
+    if (!fs.existsSync(profilePicPath)) {
+      console.error('[avatar] File not found on disk:', profilePicPath)
+      return res.status(404).send('File not found')
+    }
 
     res.sendFile(profilePicPath)
   } catch (err) {
@@ -90,7 +107,8 @@ router.post('/me/avatar', validateToken, upload.single('profilePic'), async (req
     if (!user) return res.status(404).json({ message: "User not found" })
     if (!req.file) return res.status(400).json({ message: "No file uploaded" })
 
-    user.profilePic = req.file.path
+    // Store only filename (not full path)
+    user.profilePic = req.file.filename
     await user.save()
     res.status(200).json({ message: "Profile picture updated" })
   } catch (err) {
