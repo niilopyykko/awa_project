@@ -8,6 +8,7 @@ import { IUser, User } from "../models/User";
 import path from "path";
 import fs from "fs";
 import { Types } from 'mongoose';
+import mime from "mime";
 
 const router: Router = Router();
 
@@ -370,20 +371,61 @@ router.get("/documents/:id/pdf", async (req: Request, res: Response) => {
 // ------------------------
 // Serve uploaded files
 // ------------------------
+
 router.get("/uploads/:id", async (req: Request, res: Response) => {
   try {
     const docId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    console.log(`[uploads] Requested ID: ${docId}`);
 
-    let doc = await UserDocument.findById(docId).populate("owner", "username").populate("editors", "username");
-    if (!doc) {
-      doc = await UserDocument.findOne({ shareToken: docId }).populate("owner", "username").populate("editors", "username");
+    let doc = null;
+
+    // Try to find by ObjectId if it's a valid MongoDB ObjectId format
+    if (Types.ObjectId.isValid(docId) && docId.length === 24) {
+      try {
+        console.log(`[uploads] Attempting to find by ObjectId: ${docId}`);
+        doc = await UserDocument.findById(docId)
+          .populate("owner", "username")
+          .populate("editors", "username");
+        if (doc) console.log(`[uploads] Found by ObjectId: ${doc._id}, filepath: ${doc.filepath}`);
+      } catch (err) {
+        // If it fails, try by shareToken instead
+        console.log(`[uploads] ObjectId lookup failed, trying shareToken`);
+        doc = null;
+      }
     }
-    if (!doc) return res.status(404).send("Document not found");
+
+    // If not found by ID, try by shareToken (UUID format)
+    if (!doc) {
+      console.log(`[uploads] Attempting to find by shareToken: ${docId}`);
+      doc = await UserDocument.findOne({ shareToken: docId })
+        .populate("owner", "username")
+        .populate("editors", "username");
+      if (doc) console.log(`[uploads] Found by shareToken: ${doc._id}, filepath: ${doc.filepath}`);
+    }
+
+    if (!doc) {
+      console.error(`[uploads] Document not found: docId=${docId}`);
+      return res.status(404).send("Document not found");
+    }
 
     const uploadsDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
-    const filePath = path.join(uploadsDir, doc.filepath || docId);
+    
+    // Must have a filepath to serve
+    if (!doc.filepath) {
+      console.error(`[uploads] No filepath in document: docId=${docId}, filepath=${doc.filepath}`);
+      return res.status(404).send("File not found");
+    }
 
-    if (!fs.existsSync(filePath)) return res.status(404).send("File not found");
+    const filePath = path.join(uploadsDir, doc.filepath);
+    console.log(`[uploads] Looking for file at: ${filePath}`);
+
+    if (!fs.existsSync(filePath)) {
+      console.error(`[uploads] File not found on disk: filePath=${filePath}`);
+      return res.status(404).send("File not found");
+    }
+
+    const mimeType = mime.getType(filePath) || "application/octet-stream";
+    res.type(mimeType);
 
     return res.sendFile(filePath);
   } catch (err) {
@@ -391,6 +433,5 @@ router.get("/uploads/:id", async (req: Request, res: Response) => {
     return res.status(500).send("Server error");
   }
 });
-
 
 export default router;

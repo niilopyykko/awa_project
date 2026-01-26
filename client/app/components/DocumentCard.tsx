@@ -21,7 +21,9 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
     const router = useRouter();
     const [fileUrl, setFileUrl] = useState<string | null>(null);
 
-    const ext = doc.name.split(".").pop()?.toLowerCase() || "";
+    // Get extension from filepath if available, otherwise from name
+    const filename = doc.filepath || doc.name;
+    const ext = filename.split(".").pop()?.toLowerCase() || "";
     const isImage = ["png", "jpg", "jpeg", "webp", "avif"].includes(ext);
     const isGif = ext === "gif";
     const isVideo = ["mp4", "webm", "ogg"].includes(ext);
@@ -38,12 +40,11 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
                 });
 
                 if (!res.ok) {
-                    console.error("Failed to fetch file", res.status, res.statusText);
+                    console.error("Failed to fetch file", res.status);
                     setFileUrl(null);
                     return;
                 }
                 const blob = await res.blob();
-                console.log("File fetched successfully, size:", blob.size, "type:", blob.type);
                 const url = URL.createObjectURL(blob);
                 setFileUrl(url);
             } catch (err) {
@@ -137,16 +138,19 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
             </div>
 
             {/* Media / preview */}
-            {fileUrl && (
+            {fileUrl && !compact && (
                 isVideo ? (
-                    <div className={`${compact ? "max-h-20" : "max-h-60"} overflow-hidden rounded flex justify-center`}>
+                    <div className="max-h-60 overflow-hidden rounded flex justify-center">
                         <video src={fileUrl} controls className="h-full w-auto object-contain" />
                     </div>
                 ) : isGif || isImage ? (
-                    <img
+                    <Image
                         src={fileUrl}
                         alt={doc.name}
-                        className={`w-full ${compact ? "max-h-20" : "max-h-60"} object-contain rounded`}
+                        width={400}
+                        height={200}
+                        unoptimized
+                        className="w-full max-h-60 object-contain"
                     />
                 ) : (
                     <a href={fileUrl} target="_blank" rel="noreferrer" className="underline">
