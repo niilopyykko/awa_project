@@ -16,7 +16,7 @@ router.get('/documents/:shareToken/readonly', async (req: Request, res: Response
     }
 
     const uploadsUrl = doc.filepath
-      ? `/api/public/uploads/${doc.shareToken}`
+      ? `/api/uploads/${doc.shareToken}`
       : null
 
     let html = `<!doctype html>

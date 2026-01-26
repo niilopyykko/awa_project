@@ -92,7 +92,12 @@ router.post(
 
       // Create new document
       const shareToken = randomUUID();
-      const serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT ?? 3001}`;
+      // PUBLIC_SERVER_URL is the externally reachable host (e.g., https://app.example.com)
+      // Fallbacks keep backward compatibility but may point to an internal hostname if not set.
+      const publicServerUrl = process.env.PUBLIC_SERVER_URL
+        || process.env.SERVER_URL
+        || process.env.CLIENT_URL
+        || `http://localhost:${process.env.PORT ?? 3001}`;
       const newDoc = new UserDocument({
         name: name?.trim() || "Untitled",
         content: content || "",
@@ -101,7 +106,7 @@ router.post(
         editors: editorIds,
         filepath: req.file?.filename ?? null,
         shareToken,
-        readOnlyLink: `${serverUrl}/documents/${shareToken}/readonly`,
+        readOnlyLink: `${publicServerUrl}/documents/${shareToken}/readonly`,
         createdAt: new Date(),
       });
 
