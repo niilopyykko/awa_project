@@ -32,7 +32,8 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
             if (!doc._id || !doc.filepath) return;
             try {
                 const res = await fetch(`/api/proxy/uploads/${doc._id}`, {
-                    credentials: 'include'
+                    method: 'GET',
+                    credentials: 'include',
                 });
                 if (!res.ok) {
                     console.error("Failed to fetch file", res.status);
@@ -48,7 +49,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
             }
         };
         fetchFile();
-    }, [doc._id]);
+    }, [doc._id, doc.filepath]);
 
     const renderPlainText = (html: string) => {
         const div = document.createElement("div");
@@ -100,7 +101,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
 
                 <div className="flex flex-col items-end gap-1 shrink-0">
                     <div className="flex items-center gap-2">
-                        {!isTrashed && (
+                        {!isTrashed && !isImage && !isVideo && (
                             <button
                                 onClick={openEditor}
                                 className="px-2 py-1 text-xs rounded-md bg-blue-500 hover:bg-blue-600"

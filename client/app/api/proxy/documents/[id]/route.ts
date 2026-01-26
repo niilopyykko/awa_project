@@ -15,6 +15,8 @@ export async function GET(
         }
         const headers: Record<string, string> = {}
         if (token) headers.Authorization = token
+        const rawCookie = req.headers.get('cookie')
+        if (rawCookie) headers['cookie'] = rawCookie
 
         const res = await fetch(`${BACKEND_URL}/api/documents/${id}`, {
             method: 'GET',
@@ -44,6 +46,8 @@ export async function DELETE(
 
         const headers: Record<string, string> = {}
         if (token) headers.Authorization = token
+        const rawCookie = req.headers.get('cookie')
+        if (rawCookie) headers['cookie'] = rawCookie
 
         const res = await fetch(`${BACKEND_URL}/api/documents/${id}`, {
             method: 'DELETE',

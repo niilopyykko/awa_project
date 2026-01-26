@@ -14,12 +14,22 @@ export async function POST(req: NextRequest) {
 
     const headers: Record<string, string> = {}
     if (token) headers.Authorization = token
+    // forward raw cookie header for HttpOnly token support
+    const rawCookie = req.headers.get('cookie')
+    if (rawCookie) headers['cookie'] = rawCookie
+
+    // Read raw body and forward content-type so multipart boundary is preserved
+    const contentType = req.headers.get('content-type') || '';
+    const raw = await req.arrayBuffer();
+
+    const forwardHeaders: Record<string, string> = { ...headers };
+    if (contentType) forwardHeaders['content-type'] = contentType;
 
     const res = await fetch(`${BACKEND_URL}/user/me/avatar`, {
       method: 'POST',
-      headers,
-      body: req.body,
-      duplex: 'half' // required for FormData
+      headers: forwardHeaders,
+      body: raw,
+      credentials: 'include'
     })
 
     const data = await res.json()

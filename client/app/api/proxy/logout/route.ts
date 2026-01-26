@@ -4,7 +4,11 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
 
 export async function POST(req: NextRequest) {
   try {
-    const res = await fetch(`${BACKEND_URL}/user/logout`, { method: 'POST' })
+    // forward cookie header so backend can clear session if needed
+    const rawCookie = req.headers.get('cookie')
+    const headers: Record<string,string> = {}
+    if (rawCookie) headers['cookie'] = rawCookie
+    const res = await fetch(`${BACKEND_URL}/user/logout`, { method: 'POST', headers })
 
     // Build headers as array of tuples for multiple Set-Cookie
     const headersArr: [string, string][] = []

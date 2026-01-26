@@ -28,8 +28,7 @@ export default function Navbar() {
                 })
 
                 if (!res.ok) {
-                    const text = await res.text().catch(() => null)
-                    console.error('Avatar fetch failed', res.status, text)
+                    console.warn('Avatar not found, using default', res.status);
                     setProfilePic('/vercel.svg')
                     return
                 }

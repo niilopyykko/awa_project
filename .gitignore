@@ -22,5 +22,5 @@ dist/
 # Build artifacts
 client/.next/
 server/dist/
-uploads/
+server/uploads/
 .env

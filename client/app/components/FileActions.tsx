@@ -39,10 +39,82 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
             alert('Action failed. See console for details.');
         }
     };
+    const handleTogglePublic = async () => {
+        try {
+            const res = await fetch(`/api/proxy/documents/${fileId}`, { method: 'GET', credentials: 'include' });
+            if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
+            const data = await res.json();
+            const doc = data?.document || data || {};
+            const current = !!doc.isVisibleNonAuth;
+            const confirmMsg = current ? `Make "${fileName}" private?` : `Make "${fileName}" public to everyone?`;
+            if (!confirm(confirmMsg)) return;
+
+            const setRes = await fetch(`/api/proxy/documents/${fileId}/visibility`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ makePublic: !current })
+            });
+            if (!setRes.ok) {
+                let msg = `Set visibility failed: ${setRes.status}`;
+                try { const j = await setRes.json(); if (j && j.message) msg += ` - ${j.message}` } catch { }
+                alert(msg);
+                return;
+            }
+            alert(`Visibility updated`);
+            if (onUpdated) onUpdated();
+            try { router.refresh(); } catch { }
+        } catch (err) {
+            console.error(err);
+            alert('Could not update visibility. See console for details.');
+        }
+    };
     // here we use web browser confirmation so no files are accidentally deleted
-    const handleTrash = () => {
-        if (!confirm(`Move "${fileName}" to trash?`)) return;
-        api(`/api/proxy/documents/${fileId}/trash`, 'POST', true);
+    const handleTrash = async () => {
+        if (isOwner) {
+            const confirmed = confirm(`Move "${fileName}" to trash?`);
+            if (!confirmed) return;
+
+            try {
+                await api(`/api/proxy/documents/${fileId}/trash`, 'POST', true);
+                alert(`"${fileName}" moved to trash`);
+                if (onUpdated) onUpdated();
+            } catch (err) {
+                console.error(err);
+                alert('Could not move document to trash. See console for details.');
+            }
+            return;
+        }
+
+        if (isEditor) {
+            const confirmed = confirm(`Remove yourself as a collaborator from "${fileName}"?`);
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`/api/proxy/documents/${fileId}/share`, {
+                    method: 'POST',
+                    credentials: 'include', // tärkeää, jotta HttpOnly-cookie lähetetään
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ remove: true }) // ei usernamea
+                });
+
+                const data = await res.json().catch(() => null);
+                if (!res.ok) {
+                    const msg = data?.message ? `Remove collaborator failed: ${data.message}` : `Remove collaborator failed: ${res.status}`;
+                    alert(msg);
+                    return;
+                }
+
+                alert('You have been removed as a collaborator');
+                if (onUpdated) onUpdated();
+            } catch (err) {
+                console.error(err);
+                alert('Could not remove collaborator. See console for details.');
+            }
+            return;
+        }
+
+        alert('You do not have permission to move this file to trash.');
     };
 
     const handleRestore = () => {
@@ -58,9 +130,17 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
         // Request parent switch back to Drive; if trash becomes empty, UI will reflect it
         if (onUpdated) onUpdated({ switchToDrive: true });
     };
+    const ext = (fileName || '').split('.').pop()?.toLowerCase() || '';
+    const isImage = ['png', 'jpg', 'jpeg', 'webp', 'avif', 'gif'].includes(ext);
+    const isVideo = ['mp4', 'webm', 'ogg'].includes(ext);
+    const isPdf = ext === 'pdf';
+
     const handleDownload = async () => {
         try {
-            const res = await fetch(`/api/proxy/documents/${fileId}/pdf`, {
+            // For images, videos, and already-uploaded PDFs use the raw upload endpoint.
+            // Only generate a PDF from HTML for documents that are not uploaded files.
+            const route = (isImage || isVideo || isPdf) ? `/api/proxy/uploads/${fileId}` : `/api/proxy/documents/${fileId}/pdf`;
+            const res = await fetch(route, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -103,55 +183,63 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
             alert((err as Error).message || 'Download failed. See console for details.');
         }
     };
-    const handleCopy = () => {
-        (async () => {
-            try {
-                // fetch original document
-                const res = await fetch(`/api/proxy/documents/${fileId}`, {
-                    method: 'GET',
-                    credentials: 'include'
-                });
-                if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
-                const data = await res.json();
-                const doc = data?.document || data;
-                if (!doc) {
-                    alert('Original document not found');
-                    return;
-                }
-
-                const newName = `Copy of ${doc.name || fileName}`;
-                const body = {
-                    name: newName,
-                    content: doc.content || "",
-                    isPublic: !!doc.isVisibleNonAuth,
-                    editors: (doc.editors || []).map((e: IUser) => (e.username ? e.username : String(e))).join(',')
-                };
-
-                const createRes = await fetch(`/api/proxy/upload`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
-                });
-
-                if (!createRes.ok) {
-                    let msg = `Create copy failed: ${createRes.status}`;
-                    try {
-                        const j = await createRes.json();
-                        if (j && j.message) msg += ` - ${j.message}`;
-                    } catch { }
-                    alert(msg);
-                    return;
-                }
-
-                alert(`Created copy: ${newName}`);
-                if (onUpdated) onUpdated();
-                try { router.refresh(); } catch { }
-            } catch (err) {
-                console.error(err);
-                alert('Could not create copy. See console for details.');
+    const handleCopy = async () => {
+        try {
+            // fetch original document
+            const res = await fetch(`/api/proxy/documents/${fileId}`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
+            const data = await res.json();
+            const doc = data?.document || data;
+            if (!doc) {
+                alert('Original document not found');
+                return;
             }
-        })();
+
+            const newName = `Copy of ${doc.name || fileName}`;
+            const formData = new FormData();
+            formData.append('name', newName);
+            formData.append('content', doc.content || '');
+            formData.append('isPublic', String(!!doc.isVisibleNonAuth));
+            formData.append('editors', (doc.editors || []).map((e: IUser) => (e.username ? e.username : String(e))).join(','));
+
+            // If original has an uploaded file, fetch it and append as 'file' so backend receives multipart file
+            try {
+                const fileRes = await fetch(`/api/proxy/uploads/${fileId}`, { credentials: 'include' });
+                if (fileRes.ok) {
+                    const blob = await fileRes.blob();
+                    // Use original document name as filename
+                    formData.append('file', blob, doc.name || fileName || 'file');
+                }
+            } catch (e) {
+                // ignore file fetch errors and proceed with text copy
+            }
+
+            const createRes = await fetch(`/api/proxy/upload`, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData,
+            });
+
+            if (!createRes.ok) {
+                let msg = `Create copy failed: ${createRes.status}`;
+                try {
+                    const j = await createRes.json();
+                    if (j && j.message) msg += ` - ${j.message}`;
+                } catch { }
+                alert(msg);
+                return;
+            }
+
+            alert(`Created copy: ${newName}`);
+            if (onUpdated) onUpdated();
+            try { router.refresh(); } catch { }
+        } catch (err) {
+            console.error(err);
+            alert('Could not create copy. See console for details.');
+        }
     };
 
     const handleRename = () => {
@@ -217,7 +305,13 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
             });
             if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
             const data = await res.json();
-            const link = data?.readOnlyLink || data?.document?.readOnlyLink || '';
+            let link = data?.readOnlyLink || data?.document?.readOnlyLink || '';
+            if (!link) {
+                // fallback: look for a JSON property named readOnlyLink
+                const flat = JSON.stringify(data || {});
+                const m = flat.match(/"readOnlyLink"\s*:\s*"([^"]+)"/i);
+                if (m && m[1]) link = m[1];
+            }
             if (link) {
                 try {
                     await navigator.clipboard.writeText(link);
@@ -246,8 +340,9 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
                     <>
                         <DropdownItem key="rename" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleRename}>Rename</DropdownItem>
                         <DropdownItem key="copy" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleCopy}>Create Copy</DropdownItem>
-                        <DropdownItem key="download" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleDownload}>Download PDF</DropdownItem>
+                        <DropdownItem key="download" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleDownload}>Download</DropdownItem>
                         <DropdownItem key="share" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleShare} >Share</DropdownItem>
+                        <DropdownItem key="visibility" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleTogglePublic}>Make Public/Private</DropdownItem>
                         <DropdownItem key="link" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleLink}>Get Share Link</DropdownItem>
                         <DropdownItem key="trash" className="cursor-pointer m-1 px-1 text-center size-auto bg-yellow-300 rounded-md text-black" onClick={handleTrash}>Move to Trash</DropdownItem>
 

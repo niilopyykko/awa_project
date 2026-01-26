@@ -1,67 +1,62 @@
-"use client"
-import { useRouter } from "next/navigation"
+'use client'
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { useAuth } from "../context/AuthContext"
-
-interface errors {
-  location: string
-  msg: string
-  path: string
-  type: string
-  value: string
-}
 
 export default function Register() {
   const router = useRouter()
-  const { refresh } = useAuth()
+  const { login } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [profileFile, setProfileFile] = useState<File | null>(null)
-  const [userPrompt, setUserPrompt] = useState<string | string[]>('')
+  const [userPrompt, setUserPrompt] = useState('')
 
   const submitRegister = async () => {
     try {
+      const fd = new FormData()
+      fd.append("username", username)
+      fd.append("password", password)
+      if (profileFile) fd.append("profilePic", profileFile)
+
       const response = await fetch("/api/proxy/register-json", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-        credentials: 'include'
+        credentials: "include",
+        body: fd
       })
 
       const data = await response.json()
       console.log("Register response:", data)
 
       if (!response.ok) {
-        setUserPrompt(data.message || "Registration failed")
+        setUserPrompt(data?.message ?? "Registration failed")
         return
       }
 
-      // Backend set cookies via proxy — refresh AuthContext from cookies
-      try { await refresh() } catch { }
-      // safe navigation: call a fetch to trigger cookie presence, then refresh via location reload
-      await fetch('/api/proxy/register-json', { method: 'GET', credentials: 'include' }).catch(() => null)
-      router.push('/')
-
-      if (profileFile) {
-        const fd = new FormData()
-        fd.append("profilePic", profileFile)
-
-        const avatarRes = await fetch("/api/proxy/avatar-upload", {
-          method: "POST",
-          credentials: 'include',
-          body: fd
-        })
-
-        const avatarData = await avatarRes.json()
-        console.log("Avatar upload response:", avatarData)
+      // If backend returned token directly, use it. Otherwise, call the login proxy.
+      if (data?.token) {
+        login(data.token, data.username ?? username)
+      } else {
+        try {
+          const lf = new FormData()
+          lf.append('username', username)
+          lf.append('password', password)
+          const loginRes = await fetch('/api/proxy/login', { method: 'POST', credentials: 'include', body: lf })
+          const loginData = await loginRes.json()
+          if (loginRes.ok) {
+            login(loginData?.token ?? '', loginData?.username ?? username)
+          }
+        } catch (e) {
+          console.warn('Auto-login after register failed', e)
+        }
       }
 
-      router.push("/")
+      router.push('/')
     } catch (err) {
       console.error(err)
       setUserPrompt("Network error")
     }
   }
+
 
 
   return (

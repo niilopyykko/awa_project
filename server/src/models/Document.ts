@@ -1,24 +1,19 @@
-import mongoose, { now, Schema } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
 interface IUserDocument extends Document {
-    name: string
-    owner: {
-        _id: { type: Schema.Types.ObjectId; ref: "User"; required: true; }; type: Schema.Types.ObjectId, ref: "User", required: true 
-}
-
-    editors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] //list of users with permission to edit
-    isVisibleNonAuth: boolean  //if document is visible to users that are not logged in
-    content: string
-    id?: string
-    filepath: string
-    shareToken: string
-    readOnlyLink: string
-    lockedBy?: { type: Schema.Types.ObjectId, ref: "User" }
-    lockedAt?: Date
-    lockExpiresAt?: Date
-
-    trash: Boolean
-
+    name: string;
+    owner: mongoose.Types.ObjectId;
+    editors: mongoose.Types.ObjectId[]; // array of user IDs
+    isVisibleNonAuth: boolean;
+    content: string;
+    id?: string;
+    filepath: string;
+    shareToken: string;
+    readOnlyLink: string;
+    lockedBy?: mongoose.Types.ObjectId;
+    lockedAt?: Date;
+    lockExpiresAt?: Date;
+    trash: boolean;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -26,7 +21,7 @@ interface IUserDocument extends Document {
 const userDocumentSchema = new Schema({
     name: { type: String, required: true },
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    editors: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    editors: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     isVisibleNonAuth: { type: Boolean, default: false },
     content: { type: String, default: null },
     filepath: { type: String, default: null },
@@ -34,11 +29,10 @@ const userDocumentSchema = new Schema({
     readOnlyLink: { type: String },
     lockedBy: { type: Schema.Types.ObjectId, ref: "User" },
     lockedAt: { type: Date, default: null },
-    lockExpiresAt: {type: Date,default: null},
-
+    lockExpiresAt: { type: Date, default: null },
     trash: { type: Boolean, default: false }
 }, { timestamps: true })
 
-const UserDocument: mongoose.Model<IUserDocument> = mongoose.model<IUserDocument>("userDocument", userDocumentSchema)
+const UserDocument: mongoose.Model<IUserDocument> = mongoose.model<IUserDocument>("userDocument", userDocumentSchema);
 
-export { IUserDocument, UserDocument }
+export { IUserDocument, UserDocument };

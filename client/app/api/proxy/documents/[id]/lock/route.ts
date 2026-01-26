@@ -16,6 +16,8 @@ export async function GET(
 
     const headers: Record<string, string> = {}
     if (token) headers.Authorization = token
+    const rawCookie = req.headers.get('cookie')
+    if (rawCookie) headers['cookie'] = rawCookie
 
     const res = await fetch(`${BACKEND_URL}/api/documents/${id}/lock`, {
       method: 'GET',
@@ -43,6 +45,8 @@ export async function POST(
         }
     const headers: Record<string, string> = {}
     if (token) headers.Authorization = token
+    const rawCookie = req.headers.get('cookie')
+    if (rawCookie) headers['cookie'] = rawCookie
 
     const res = await fetch(`${BACKEND_URL}/api/documents/${id}/lock`, {
       method: 'POST',

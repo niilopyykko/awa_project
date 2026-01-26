@@ -20,6 +20,9 @@ export async function POST(req: NextRequest) {
 
     const headers: Record<string, string> = {}
     if (token) headers.Authorization = token
+    // forward raw cookie header so backend can parse HttpOnly cookies
+    const rawCookie = req.headers.get('cookie')
+    if (rawCookie) headers['cookie'] = rawCookie
 
     const res = await fetch(`${BACKEND_URL}/api/upload`, {
       method: 'POST',

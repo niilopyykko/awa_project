@@ -17,6 +17,8 @@ export async function GET(
 
     const headers: HeadersInit = {}
     if (token) headers['authorization'] = token
+    const rawCookie = req.headers.get('cookie')
+    if (rawCookie) headers['cookie'] = rawCookie
 
     const res = await fetch(`${BACKEND_URL}/api/documents/${id}/pdf`, {
       method: 'GET',
