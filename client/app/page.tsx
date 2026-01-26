@@ -112,8 +112,8 @@ export default function Home() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-4 mb-2">
-        <span className={`px-3 py-1 ml-8 min-w-sm text-center rounded-full text-md ${effectiveShowTrash ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3">
+        <span className={`px-3 py-1 sm:ml-8 min-w-sm text-center rounded-full text-sm sm:text-md ${effectiveShowTrash ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
           {effectiveShowTrash ? 'Trash' : 'Drive'}
         </span>
 
@@ -136,10 +136,10 @@ export default function Home() {
       </div>
 
       {visibleDocuments.length === 0 ? (
-        <div className="flex items-center justify-center min-h-[40vh] p-8">
-          <div>
-            <p className="text-center p-4 text-2xl rounded-t-2xl bg-fuchsia-400 text-black">Drive is empty</p>
-            <p className="text-center p-4 text-md rounded-b-2xl bg-fuchsia-200 text-black">OR DATABASE IS OFFLINE?</p>
+        <div className="flex items-center justify-center min-h-[40vh] p-6 sm:p-8">
+          <div className="w-full max-w-md">
+            <p className="text-center p-4 text-xl sm:text-2xl rounded-t-2xl bg-fuchsia-400 text-black">Drive is empty</p>
+            <p className="text-center p-4 text-sm sm:text-md rounded-b-2xl bg-fuchsia-200 text-black">OR DATABASE IS OFFLINE?</p>
           </div>
         </div>
       ) : (
