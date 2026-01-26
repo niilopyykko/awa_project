@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest,  { params }: { params: Promise<{ id: string }> }
+) {
     const { id } = await params; 
     const body = await req.json().catch(() => null);
 

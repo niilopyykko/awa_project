@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest,   { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id } = await params;
     if (!id) return NextResponse.json({ message: "Missing document ID" }, { status: 400 });
