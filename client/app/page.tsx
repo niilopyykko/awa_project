@@ -6,6 +6,8 @@ import DocumentList from "./components/DocumentList";
 import DocumentGrid from "./components/DocumentGrid";
 import useDocuments from "./hooks/useDocuments";
 import { IDocument } from "@/src/types";
+import { IoFolder, IoTrash  } from "react-icons/io5";
+
 
 
 export default function Home() {
@@ -13,6 +15,7 @@ export default function Home() {
 
   const [visibleDocuments, setVisibleDocuments] = useState<IDocument[]>([]);
   const [page, setPage] = useState<number>(1);
+  const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
 
   const { documents, user, refresh } = useDocuments();
   const [gridView, setGridView] = useState<boolean>(false);
@@ -23,6 +26,12 @@ export default function Home() {
 
   const trashCount = documents.filter(d => Boolean(d.trash)).length;
 
+  // Track window width for responsive page sizing
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Auto-open Trash view if the current user owns trashed items and there are no non-trashed items
   const ownsTrashed = documents.some(d => d.trash && d.owner && ((d.owner as { username?: string }).username === user));
@@ -96,8 +105,16 @@ export default function Home() {
 
 
   // reset page when query or filters change
-  // compute pagination helpers
-  const pageSize = gridView ? 6 : 8;
+  // compute pagination helpers - responsive page size based on screen width
+  const getPageSize = () => {
+    if (!gridView) return 6; // list view always 6
+    // grid view: adjust based on screen width
+    if (windowWidth >= 1280) return 8; // xl: 4 cols × 2 rows
+    if (windowWidth >= 1024) return 6; // lg: 3 cols × 2 rows
+    if (windowWidth >= 640) return 4;  // sm: 2 cols × 2 rows
+    return 2; // mobile: 1 col × 2 rows
+  };
+  const pageSize = getPageSize();
   const totalPages = Math.max(1, Math.ceil(visibleDocuments.length / pageSize));
   const currentPage = Math.min(Math.max(1, page), totalPages);
   const paginatedDocs = visibleDocuments.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -113,9 +130,24 @@ export default function Home() {
   return (
     <>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3">
-        <span className={`px-3 py-1 sm:ml-8 min-w-sm text-center rounded-full text-sm sm:text-md ${effectiveShowTrash ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
-          {effectiveShowTrash ? 'Trash' : 'Drive'}
-        </span>
+        <button
+          onClick={() => setShowTrash(s => !s)}
+          disabled={!effectiveShowTrash && trashCount === 0}
+          className={`px-4 py-2 sm:px-6 sm:py-2.5 sm:ml-8 text-center rounded-full text-sm sm:text-base font-bold shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${effectiveShowTrash
+              ? 'bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800'
+              : 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700'
+            }`}
+        >
+          {effectiveShowTrash ? (
+            <span className="flex items-center justify-center gap-2">
+              <IoTrash /> Trash ({trashCount})
+            </span>
+          ) : (
+            <span className="flex items-center justify-center gap-2">
+              <IoFolder /> Drive ({nonTrashedCount})
+            </span>
+          )}
+        </button>
 
         <Toolbar
           sortKey={sortKey}

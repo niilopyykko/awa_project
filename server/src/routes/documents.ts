@@ -36,7 +36,7 @@ router.get("/documents", validateToken, async (req: CustomRequest, res: Response
       .populate("editors", "username");
 
     if (!documents || documents.length === 0) {
-      return res.status(404).json({ message: "No documents found" });
+      return res.json([]);
     }
 
     return res.json(documents);
@@ -186,6 +186,123 @@ router.post("/documents/:id/renewLock", validateToken, async (req: CustomRequest
     doc.lockExpiresAt = new Date(Date.now() + 2 * 60 * 1000);
     await doc.save();
     return res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ------------------------
+// Rename document
+// ------------------------
+router.post("/documents/:id/rename", validateToken, async (req: CustomRequest, res: Response) => {
+  try {
+    const docId = req.params.id;
+    const userId = req.user!.id;
+    const { name } = req.body || {};
+
+    if (!name || typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ message: "Name is required" });
+    }
+
+    const doc = await UserDocument.findById(docId);
+    if (!doc) return res.status(404).json({ message: "Document not found" });
+
+    const isOwner = doc.owner.toString() === userId;
+    const editorsArr = (doc.editors || []).map((e: any) => (e._id ? e._id.toString() : e));
+    const isEditor = editorsArr.includes(userId);
+
+    if (!isOwner && !isEditor) return res.status(403).json({ message: "No permission" });
+
+    doc.name = name.trim();
+    await doc.save();
+
+    return res.json({ message: "Renamed", document: doc });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ------------------------
+// Share document with a collaborator (adds to editors)
+// ------------------------
+router.post("/documents/:id/share", validateToken, async (req: CustomRequest, res: Response) => {
+  try {
+    const docId = req.params.id;
+    const userId = req.user!.id;
+    const { collaborator, remove } = req.body || {};
+
+    const doc = await UserDocument.findById(docId);
+    if (!doc) return res.status(404).json({ message: "Document not found" });
+
+    const isOwner = doc.owner.toString() === userId;
+    const editorIds = (doc.editors || []).map((e: any) => (e._id ? e._id.toString() : e.toString()));
+    const isEditor = editorIds.includes(userId);
+
+    // Allow an editor to remove themselves
+    if (remove) {
+      if (!isEditor) return res.status(403).json({ message: "No permission" });
+      doc.editors = (doc.editors || []).filter(e => (e._id?.toString() || e.toString()) !== userId);
+      await doc.save();
+
+      const populated = await doc.populate([
+        { path: "owner", select: "username" },
+        { path: "editors", select: "username" },
+      ]);
+
+      return res.json({ message: "Removed collaborator", document: populated });
+    }
+
+    // Adding a collaborator: owner only
+    if (!collaborator || typeof collaborator !== "string" || !collaborator.trim()) {
+      return res.status(400).json({ message: "collaborator username is required" });
+    }
+
+    if (!isOwner) return res.status(403).json({ message: "No permission" });
+
+    const targetUser = await User.findOne({ username: collaborator.trim() });
+    if (!targetUser) return res.status(404).json({ message: "User not found" });
+
+    const targetId = targetUser._id.toString();
+    if (targetId === userId) return res.status(400).json({ message: "Cannot share with yourself" });
+
+    const existingEditors = new Set((doc.editors || []).map((e: any) => (e._id ? e._id.toString() : e.toString())));
+    if (!existingEditors.has(targetId)) {
+      doc.editors = [...(doc.editors || []), targetUser._id];
+      await doc.save();
+    }
+
+    const populated = await doc.populate([
+      { path: "owner", select: "username" },
+      { path: "editors", select: "username" },
+    ]);
+
+    return res.json({ message: "Shared", document: populated });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ------------------------
+// Toggle visibility (public/private)
+// ------------------------
+router.post("/documents/:id/visibility", validateToken, async (req: CustomRequest, res: Response) => {
+  try {
+    const docId = req.params.id;
+    const userId = req.user!.id;
+
+    const doc = await UserDocument.findById(docId);
+    if (!doc) return res.status(404).json({ message: "Document not found" });
+
+    const isOwner = doc.owner.toString() === userId;
+    if (!isOwner) return res.status(403).json({ message: "No permission" });
+
+    doc.isVisibleNonAuth = !doc.isVisibleNonAuth;
+    await doc.save();
+
+    return res.json({ message: "Visibility toggled", isVisibleNonAuth: doc.isVisibleNonAuth });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Internal server error" });

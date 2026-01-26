@@ -24,8 +24,8 @@ interface Props {
 export default function Toolbar({ sortKey, setSortKey, sortOrder, setSortOrder, gridView, toggleGrid, showTrash, setShowTrash, trashCount, onSearch, page, setPage, totalPages }: Props) {
     const [query, setQuery] = React.useState("");
     return (
-        <div id="viewToggle" className="flex items-center justify-end gap-4 p-4 md:p-4 lg:p-8 text-2xl md:text-3xl">
-            <div className="flex items-center gap-2">
+        <div id="viewToggle" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 lg:p-6 text-xl sm:text-2xl">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
 
                 <div className="relative flex items-center">
                     <input
@@ -36,7 +36,7 @@ export default function Toolbar({ sortKey, setSortKey, sortOrder, setSortOrder, 
                             onSearch?.(val);
                         }}
                         placeholder="Search documents..."
-                        className="text-base px-3 h-8 md:h-9 rounded-2xl bg-white text-black"
+                        className="text-sm sm:text-base px-3 h-10 sm:h-9 rounded-2xl bg-white text-black w-48 sm:w-64"
                     />
                     {query && (
                         <button
@@ -74,8 +74,8 @@ export default function Toolbar({ sortKey, setSortKey, sortOrder, setSortOrder, 
                     </div>
                 )}
 
-                <label className="text-base">Sort:</label>
-                <select value={sortKey} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortKey(e.target.value as 'name' | 'created' | 'modified')} className="text-base p-1 rounded-2xl bg-fuchsia-500 text-black">
+                <label className="text-sm sm:text-base">Sort:</label>
+                <select value={sortKey} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortKey(e.target.value as 'name' | 'created' | 'modified')} className="text-sm sm:text-base p-2 rounded-2xl bg-fuchsia-500 text-black">
                     <option value="name">Name</option>
                     <option value="created">Created</option>
                     <option value="modified">Modified</option>
@@ -83,13 +83,6 @@ export default function Toolbar({ sortKey, setSortKey, sortOrder, setSortOrder, 
                 <button onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')} className="px-2">{sortOrder === 'asc' ? <FaSortUp /> : <FaSortDown />}</button>
             </div>
             <div className="flex items-center gap-2">
-                <button
-                    onClick={() => setShowTrash(s => !s)}
-                    className={`px-3 py-1 rounded-2xl ${showTrash ? 'bg-green-600' : 'bg-red-600'} text-white`}
-                    disabled={!showTrash && trashCount === 0}
-                >
-                    {showTrash ? `Back to Drive` : (trashCount > 0 ? `Open Trash (${trashCount})` : `Trash (empty)`)}
-                </button>
                 <button onClick={toggleGrid}>
                     {gridView ? (<IoList />) : (<IoGrid />)}
                 </button>

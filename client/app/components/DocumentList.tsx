@@ -10,8 +10,8 @@ interface Props {
 
 export default function DocumentList({ documents, currentUser, onUpdated }: Props) {
     return (
-        <div className="p-4">
-            <div className="flex flex-col gap-4">
+        <div className="p-2 sm:p-4">
+            <div className="flex flex-col gap-3 sm:gap-4">
                 {documents.map(doc => (
                     <DocumentCard
                         key={doc._id}

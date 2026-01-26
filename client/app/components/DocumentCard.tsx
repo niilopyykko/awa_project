@@ -86,7 +86,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
         ${compact ? "bg-amber-700 border-amber-400" : "bg-amber-800 border-amber-200"}`}
         >
             {/* Header + actions */}
-            <div className="flex items-start gap-2">
+            <div className="flex flex-col sm:flex-row items-start gap-2">
                 <div className="flex-1 min-w-0 rounded-md shadow-2xl bg-amber-700 p-2">
                     <h3 className="font-bold truncate text-sm md:text-lg">{doc.name}</h3>
 
@@ -103,7 +103,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
                     </div>
                 </div>
 
-                <div className="flex flex-col items-end gap-1 shrink-0">
+                <div className="flex flex-col sm:items-end items-start gap-1 shrink-0 w-full sm:w-auto">
                     <div className="flex items-center gap-2">
                         {!isTrashed && !isImage && !isVideo && user && (
                             <button
@@ -140,18 +140,20 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
             {/* Media / preview */}
             {fileUrl && !compact && (
                 isVideo ? (
-                    <div className="max-h-60 overflow-hidden rounded flex justify-center">
-                        <video src={fileUrl} controls className="h-full w-auto object-contain" />
+                    <div className="h-48 overflow-hidden rounded flex justify-center bg-black">
+                        <video src={fileUrl} controls className="h-full w-full object-contain" />
                     </div>
                 ) : isGif || isImage ? (
-                    <Image
-                        src={fileUrl}
-                        alt={doc.name}
-                        width={400}
-                        height={200}
-                        unoptimized
-                        className="w-full max-h-60 object-contain"
-                    />
+                    <div className="h-48 overflow-hidden rounded flex items-center justify-center bg-gray-900">
+                        <Image
+                            src={fileUrl}
+                            alt={doc.name}
+                            width={400}
+                            height={200}
+                            unoptimized
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
                 ) : (
                     <a href={fileUrl} target="_blank" rel="noreferrer" className="underline">
                         Download
