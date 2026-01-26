@@ -344,7 +344,13 @@ router.get("/documents/:id/pdf", async (req: Request, res: Response) => {
     const html = `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:24px;} .title{font-size:20px;font-weight:600;margin-bottom:12px}</style></head><body><div class="title">${doc.name}</div>${doc.content || ""}</body></html>`;
 
     const html_to_pdf = require("html-pdf-node");
-    const options = { format: "A4", args: ["--no-sandbox"] };
+    const options = {
+      format: "A4",
+      printBackground: true,
+      launchOptions: {
+        args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      }
+    };
     const pdfBuffer = await html_to_pdf.generatePdf({ content: html }, options);
 
     res.setHeader("Content-Type", "application/pdf");
