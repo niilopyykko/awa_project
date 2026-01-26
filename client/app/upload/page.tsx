@@ -7,6 +7,8 @@ import { useAuth } from "../context/AuthContext";
 
 
 // Use the node proxy for uploads
+const MAX_FILE_MB = Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB || 25);
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 
 export default function Upload() {
   const { user } = useDocuments();
@@ -29,6 +31,10 @@ export default function Upload() {
       if (!file) {
         console.error('No file selected')
         alert("Please select a file")
+        return
+      }
+      if (file.size > MAX_FILE_BYTES) {
+        alert(`File is too large. Max size is ${MAX_FILE_MB} MB.`)
         return
       }
       setIsUploading(true)
@@ -104,7 +110,16 @@ export default function Upload() {
                       id="file"
                       name="file"
                       className="bg-[color:var(--bg-input)] border border-[color:var(--border)] text-[color:var(--text)] text-base rounded-md focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 block w-full px-3 py-2.5"
-                      onChange={e => setFile(e.target.files?.[0] ?? null)}
+                      onChange={e => {
+                        const selected = e.target.files?.[0] ?? null
+                        if (selected && selected.size > MAX_FILE_BYTES) {
+                          alert(`File is too large. Max size is ${MAX_FILE_MB} MB.`)
+                          e.target.value = ''
+                          setFile(null)
+                          return
+                        }
+                        setFile(selected)
+                      }}
                     />
                   </div>
                   <div>

@@ -3,6 +3,8 @@ import path from "path"
 import fs from "fs"
 
 const uploadsDir = process.env.UPLOAD_DIR || "./uploads"
+const maxUploadMb = parseInt(process.env.MAX_UPLOAD_MB || "25", 10)
+const maxUploadBytes = maxUploadMb * 1024 * 1024
 
 // Ensure the uploads directory exists
 if (!fs.existsSync(uploadsDir)) {
@@ -21,6 +23,11 @@ const storage: StorageEngine = multer.diskStorage({
   },
 })
 
-const upload: Multer = multer({ storage })
+const upload: Multer = multer({
+  storage,
+  limits: {
+    fileSize: maxUploadBytes,
+  },
+})
 
 export default upload

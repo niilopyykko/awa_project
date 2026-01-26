@@ -65,11 +65,14 @@ Configuration / Environment
   - `PORT` — server port (default: `3001`)
   - `MONGO_URI` — MongoDB connection string
   - `SERVER_URL` or `APP_URL` — full server URL (e.g. `http://localhost:3001`); used when generating read-only links and CORS.
+   - `UPLOAD_DIR` — uploads directory (ensure it’s mounted/writable in prod).
+   - `MAX_UPLOAD_MB` — server-side upload size cap (default 25 MB).
 
 - Client environment (frontend):
   - `NEXT_PUBLIC_API_URL` — public API base used by the client (e.g. `http://localhost:3001/api`). Set in `client/.env` for local development or in your hosting environment for production.
   - `BACKEND_URL` — internal backend URL for Next.js rewrites (e.g. `http://localhost:3001` or `http://awa_backend:3001` in Docker). Required for proxying share links and uploaded files through the frontend.
   - `PORT` — frontend port (default: `3000`).
+   - `NEXT_PUBLIC_MAX_UPLOAD_MB` — client-side upload limit (should match server `MAX_UPLOAD_MB`).
 
 When deploying, ensure `SERVER_URL` and `NEXT_PUBLIC_API_URL` point to the proper production endpoints. In Docker networks, set `BACKEND_URL` to the backend service name (e.g. `http://awa_backend:3001`).
 
