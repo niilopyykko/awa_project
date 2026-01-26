@@ -384,7 +384,16 @@ router.get("/uploads/:id", async (req: Request, res: Response) => {
   if (!doc) return res.status(404).send("Document not found");
   if (!doc.filepath) return res.status(404).send("File not found");
 
-  const filePath = doc.filepath;
+  const uploadsDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
+  let filePath = doc.filepath;
+
+  // Support both absolute paths and stored filenames
+  if (!path.isAbsolute(filePath)) {
+    filePath = path.join(uploadsDir, path.basename(filePath));
+  }
+
+  // Ensure absolute for sendFile
+  filePath = path.resolve(filePath);
 
   if (!fs.existsSync(filePath)) return res.status(404).send("File not found");
 

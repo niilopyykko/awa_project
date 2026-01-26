@@ -210,8 +210,9 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
                 const fileRes = await fetch(`/api/proxy/uploads/${fileId}`, { credentials: 'include' });
                 if (fileRes.ok) {
                     const blob = await fileRes.blob();
-                    // Use original document name as filename
-                    formData.append('file', blob, doc.name || fileName || 'file');
+                    // Preserve original filename (with extension) if we have filepath; otherwise fall back to doc.name
+                    const originalName = (doc.filepath ? doc.filepath.split(/[/\\]/).pop() : null) || doc.name || fileName || 'file';
+                    formData.append('file', blob, originalName);
                 }
             } catch (e) {
                 // ignore file fetch errors and proceed with text copy
