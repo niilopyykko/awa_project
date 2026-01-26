@@ -13,10 +13,11 @@ interface FileActionsProps {
     fileOwner?: string
     currentUsername?: string
     editors?: string[]
+    hasFile?: boolean
     onUpdated?: (opts?: { switchToDrive?: boolean }) => void
 }
 
-export default function FileActions({ fileId, fileName, isTrashed = false, fileOwner, currentUsername, editors = [], onUpdated }: FileActionsProps) {
+export default function FileActions({ fileId, fileName, isTrashed = false, fileOwner, currentUsername, editors = [], hasFile = false, onUpdated }: FileActionsProps) {
     const router = useRouter();
     const { token } = useAuth();
     // Strict props-based visibility: require currentUsername prop and owner match
@@ -130,16 +131,10 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
         // Request parent switch back to Drive; if trash becomes empty, UI will reflect it
         if (onUpdated) onUpdated({ switchToDrive: true });
     };
-    const ext = (fileName || '').split('.').pop()?.toLowerCase() || '';
-    const isImage = ['png', 'jpg', 'jpeg', 'webp', 'avif', 'gif'].includes(ext);
-    const isVideo = ['mp4', 'webm', 'ogg'].includes(ext);
-    const isPdf = ext === 'pdf';
-
     const handleDownload = async () => {
         try {
-            // For images, videos, and already-uploaded PDFs use the raw upload endpoint.
-            // Only generate a PDF from HTML for documents that are not uploaded files.
-            const route = (isImage || isVideo || isPdf) ? `/api/proxy/uploads/${fileId}` : `/api/proxy/documents/${fileId}/pdf`;
+            // If the document has an uploaded file, download that; otherwise export text to PDF.
+            const route = hasFile ? `/api/proxy/uploads/${fileId}` : `/api/proxy/documents/${fileId}/pdf`;
             const res = await fetch(route, {
                 method: 'GET',
                 credentials: 'include'
@@ -351,7 +346,7 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
                 ) : (
                     <>
                         <DropdownItem key="restore" className="cursor-pointer m-1 px-1 text-center size-auto bg-green-300 rounded-md text-black" onClick={handleRestore}>Restore</DropdownItem>
-                        <DropdownItem key="delete" className="text-danger cursor-pointer m-1 px-1 text-center size-auto bg-red-300 rounded-md text-[color:var(--text-red)]" color="danger" onClick={handleDeletePermanent}>Delete Permanently</DropdownItem>
+                        <DropdownItem key="delete" className="text-danger cursor-pointer m-1 px-1 text-center size-auto bg-red-300 rounded-md text-black" color="danger" onClick={handleDeletePermanent}>Delete Permanently</DropdownItem>
                     </>
                 )}
             </DropdownMenu>

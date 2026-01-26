@@ -92,7 +92,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
 
                     <div className={`mt-1 text-sm text-[color:var(--text-muted)] ${compact ? "flex gap-2" : "flex flex-col gap-1"}`}>
                         <span className="hidden md:block truncate">
-                            Uploaded by <b>{doc.owner.username}</b>
+                            Uploaded by <b>{doc.owner?.username ?? "Unknown"}</b>
                         </span>
                         <span className="hidden lg:block truncate">
                             Created @ {new Date(doc.createdAt).toLocaleString()}
@@ -120,6 +120,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
                             fileOwner={doc.owner?.username ?? ""}
                             editors={doc.editors?.map(e => e.username) ?? []}
                             currentUsername={currentUser ?? undefined}
+                            hasFile={Boolean(doc.filepath)}
                             onUpdated={onUpdated}
                         />
                     </div>
