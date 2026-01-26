@@ -1,8 +1,8 @@
 import multer, { StorageEngine, Multer } from "multer"
-import path from 'path'
-import fs from 'fs'
+import path from "path"
+import fs from "fs"
 
-const uploadsDir = path.resolve(process.cwd(), 'uploads')
+const uploadsDir = process.env.UPLOAD_DIR || "/uploads"
 
 // Ensure the uploads directory exists
 if (!fs.existsSync(uploadsDir)) {
@@ -10,14 +10,17 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 const storage: StorageEngine = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: (_req, _file, cb) => {
     cb(null, uploadsDir)
   },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname))
-  }
+  filename: (_req, file, cb) => {
+    cb(
+      null,
+      `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`
+    )
+  },
 })
 
-const upload: Multer = multer({ storage: storage })
+const upload: Multer = multer({ storage })
 
 export default upload

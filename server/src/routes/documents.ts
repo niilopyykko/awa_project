@@ -78,7 +78,7 @@ router.post(
               content: content || "",
               isVisibleNonAuth: isPublic === "true" || isPublic === true,
               editors: editorIds,
-              filepath: req.file?.path ?? null,
+              filepath: req.file?.filename ?? null,
             },
           },
           { new: true }
@@ -92,15 +92,16 @@ router.post(
 
       // Create new document
       const shareToken = randomUUID();
+      const serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT ?? 3001}`;
       const newDoc = new UserDocument({
         name: name?.trim() || "Untitled",
         content: content || "",
         owner: userId,
         isVisibleNonAuth: isPublic === "true" || isPublic === true,
         editors: editorIds,
-        filepath: req.file?.path ?? null,
+        filepath: req.file?.filename ?? null,
         shareToken,
-        readOnlyLink: `${process.env.CLIENT_URL ?? `http://localhost:${process.env.PORT ?? 3001}`}/documents/${shareToken}/readonly`,
+        readOnlyLink: `${serverUrl}/documents/${shareToken}/readonly`,
         createdAt: new Date(),
       });
 
@@ -266,7 +267,10 @@ router.delete("/documents/:id", validateToken, async (req: CustomRequest, res: R
     if (!doc) return res.status(404).json({ message: "Document not found" });
     if (String(doc.owner) !== req.user!.id) return res.status(403).json({ message: "Only owner can delete" });
 
-    if (doc.filepath && fs.existsSync(doc.filepath)) await fs.promises.unlink(doc.filepath);
+    if (doc.filepath) {
+      const filePath = path.join(process.cwd(), "uploads", doc.filepath);
+      if (fs.existsSync(filePath)) await fs.promises.unlink(filePath);
+    }
     await UserDocument.deleteOne({ _id: req.params.id });
     return res.json({ message: "Document permanently deleted" });
   } catch (err) {
@@ -361,7 +365,7 @@ router.get("/uploads/:id", async (req: Request, res: Response) => {
     let doc = await UserDocument.findById(docId).populate("owner", "username").populate("editors", "username");
     if (!doc) doc = await UserDocument.findOne({ shareToken: docId }).populate("owner", "username").populate("editors", "username");
 
-    const filePath = doc?.filepath ? path.resolve(doc.filepath) : path.join(process.cwd(), "uploads", docId);
+    const filePath = doc?.filepath ? path.join(process.cwd(), "uploads", doc.filepath) : path.join(process.cwd(), "uploads", docId);
     if (!fs.existsSync(filePath)) return res.status(404).send("File not found");
 
     return res.sendFile(filePath);

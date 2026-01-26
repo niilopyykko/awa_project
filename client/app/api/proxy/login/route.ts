@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
         path: '/',
         secure: process.env.NODE_ENV === 'production'
       })
-    }
+    
 
     // Also set a readable `user` cookie so client UI can read username after refresh.
     if (username) {
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         // ignore cookie set errors
       }
     }
-
+  }
     return nextRes
   } catch (err) {
     console.error('Login proxy error:', err)
