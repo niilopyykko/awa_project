@@ -16,6 +16,7 @@ export default function Upload() {
   const [file, setFile] = useState<File | null>(null)
   const [editors, setEditors] = useState<string>("")
   const [isPublic, setIsPublic] = useState<boolean>(false)
+  const [isUploading, setIsUploading] = useState<boolean>(false)
 
   //user copyable viewonly link
   const [viewLink, setViewLink] = useState<string>("")
@@ -30,6 +31,7 @@ export default function Upload() {
         alert("Please select a file")
         return
       }
+      setIsUploading(true)
       const formData = new FormData()
       formData.append('file', file)
       formData.append('editors', editors)
@@ -43,10 +45,11 @@ export default function Upload() {
 
       if (response.ok) {
         console.log('File uploaded successfully')
-        alert('File uploaded successfully!')
         const data = await response.json()
         setViewLink(data.readOnlyLink)
+        setIsUploading(false)
       } else {
+        setIsUploading(false)
         let errorBody = null
         try {
           errorBody = await response.json()
@@ -64,6 +67,7 @@ export default function Upload() {
     }
     catch (error) {
       console.error('Upload failed:', error)
+      setIsUploading(false)
     }
   }
 
@@ -131,7 +135,12 @@ export default function Upload() {
                   <label htmlFor="isPublic" className="text-md font-semibold tracking-wide text-text drop-shadow-sm drop-shadow-white">Make public</label>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button type="submit" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-700 dark:to-pink-700 dark:hover:from-purple-800 dark:hover:to-pink-800 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md hover:shadow-lg transition-all">Upload</button>
+                  <button 
+                    type="submit" 
+                    disabled={isUploading}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-700 dark:to-pink-700 dark:hover:from-purple-800 dark:hover:to-pink-800 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    {isUploading ? 'Uploading...' : 'Upload'}
+                  </button>
                 </div>
               </form>
               {viewLink && (

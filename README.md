@@ -68,8 +68,10 @@ Configuration / Environment
 
 - Client environment (frontend):
   - `NEXT_PUBLIC_API_URL` — public API base used by the client (e.g. `http://localhost:3001/api`). Set in `client/.env` for local development or in your hosting environment for production.
+  - `BACKEND_URL` — internal backend URL for Next.js rewrites (e.g. `http://localhost:3001` or `http://awa_backend:3001` in Docker). Required for proxying share links and uploaded files through the frontend.
+  - `PORT` — frontend port (default: `3000`).
 
-When deploying, ensure `SERVER_URL` and `NEXT_PUBLIC_API_URL` point to the proper production endpoints so links and API calls resolve correctly.
+When deploying, ensure `SERVER_URL` and `NEXT_PUBLIC_API_URL` point to the proper production endpoints. In Docker networks, set `BACKEND_URL` to the backend service name (e.g. `http://awa_backend:3001`).
 
 Tech Stack
 
