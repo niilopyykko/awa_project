@@ -331,22 +331,22 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
                     Open Menu
                 </Button>
             </DropdownTrigger>
-            <DropdownMenu aria-label="File Actions" className="cursor-pointer bg-blue-200 rounded-md text-black">
+            <DropdownMenu aria-label="File Actions" className="cursor-pointer bg-blue-200 dark:bg-gray-800 rounded-md text-black dark:text-white">
                 {!isTrashed ? (
                     <>
-                        <DropdownItem key="rename" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleRename}>Rename</DropdownItem>
-                        <DropdownItem key="copy" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleCopy}>Create Copy</DropdownItem>
-                        <DropdownItem key="download" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleDownload}>Download</DropdownItem>
-                        <DropdownItem key="share" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleShare} >Share</DropdownItem>
-                        <DropdownItem key="visibility" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleTogglePublic}>Make Public/Private</DropdownItem>
-                        <DropdownItem key="link" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 rounded-md text-black" onClick={handleLink}>Get Share Link</DropdownItem>
-                        <DropdownItem key="trash" className="cursor-pointer m-1 px-1 text-center size-auto bg-yellow-300 rounded-md text-black" onClick={handleTrash}>Move to Trash</DropdownItem>
+                        <DropdownItem key="rename" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleRename}>Rename</DropdownItem>
+                        <DropdownItem key="copy" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleCopy}>Create Copy</DropdownItem>
+                        <DropdownItem key="download" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleDownload}>Download</DropdownItem>
+                        <DropdownItem key="share" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleShare} >Share</DropdownItem>
+                        <DropdownItem key="visibility" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleTogglePublic}>Make Public/Private</DropdownItem>
+                        <DropdownItem key="link" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleLink}>Get Share Link</DropdownItem>
+                        <DropdownItem key="trash" className="cursor-pointer m-1 px-1 text-center size-auto bg-yellow-300 dark:bg-yellow-700 rounded-md text-black dark:text-white" onClick={handleTrash}>Move to Trash</DropdownItem>
 
                     </>
                 ) : (
                     <>
-                        <DropdownItem key="restore" className="cursor-pointer m-1 px-1 text-center size-auto bg-green-300 rounded-md text-black" onClick={handleRestore}>Restore</DropdownItem>
-                        <DropdownItem key="delete" className="text-danger cursor-pointer m-1 px-1 text-center size-auto bg-red-300 rounded-md text-black" color="danger" onClick={handleDeletePermanent}>Delete Permanently</DropdownItem>
+                        <DropdownItem key="restore" className="cursor-pointer m-1 px-1 text-center size-auto bg-green-300 dark:bg-green-700 rounded-md text-black dark:text-white" onClick={handleRestore}>Restore</DropdownItem>
+                        <DropdownItem key="delete" className="text-danger cursor-pointer m-1 px-1 text-center size-auto bg-red-300 dark:bg-red-700 rounded-md text-black dark:text-white" color="danger" onClick={handleDeletePermanent}>Delete Permanently</DropdownItem>
                     </>
                 )}
             </DropdownMenu>
