@@ -72,7 +72,8 @@ router.get('/me/avatar', validateToken, async (req: CustomRequest, res: Response
     const user = await User.findById(req.user?.id)
     if (!user?.profilePic) return res.status(404).send('No profile image')
 
-    const profilePicPath = path.join(process.cwd(), 'uploads', path.basename(user.profilePic))
+    const uploadsDir = process.env.UPLOAD_DIR || "/uploads";
+    const profilePicPath = path.join(uploadsDir, path.basename(user.profilePic));
     if (!fs.existsSync(profilePicPath)) return res.status(404).send('File not found')
 
     res.sendFile(profilePicPath)

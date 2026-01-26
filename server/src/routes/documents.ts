@@ -94,10 +94,8 @@ router.post(
       const shareToken = randomUUID();
       // PUBLIC_SERVER_URL is the externally reachable host (e.g., https://app.example.com)
       // Fallbacks keep backward compatibility but may point to an internal hostname if not set.
-      const publicServerUrl = process.env.PUBLIC_SERVER_URL
-        || process.env.SERVER_URL
-        || process.env.CLIENT_URL
-        || `http://localhost:${process.env.PORT ?? 3001}`;
+      const PUBLIC_URL = process.env.PUBLIC_SERVER_URL || `http://localhost:${process.env.PORT}`;
+      const readOnlyLink = `${PUBLIC_URL}/documents/${shareToken}/readonly`;
       const newDoc = new UserDocument({
         name: name?.trim() || "Untitled",
         content: content || "",
@@ -106,7 +104,7 @@ router.post(
         editors: editorIds,
         filepath: req.file?.filename ?? null,
         shareToken,
-        readOnlyLink: `${publicServerUrl}/documents/${shareToken}/readonly`,
+        readOnlyLink,
         createdAt: new Date(),
       });
 
@@ -273,7 +271,8 @@ router.delete("/documents/:id", validateToken, async (req: CustomRequest, res: R
     if (String(doc.owner) !== req.user!.id) return res.status(403).json({ message: "Only owner can delete" });
 
     if (doc.filepath) {
-      const filePath = path.join(process.cwd(), "uploads", doc.filepath);
+      const uploadsDir = process.env.UPLOAD_DIR || "/uploads";
+      const filePath = path.join(uploadsDir, doc.filepath);
       if (fs.existsSync(filePath)) await fs.promises.unlink(filePath);
     }
     await UserDocument.deleteOne({ _id: req.params.id });
@@ -376,7 +375,8 @@ router.get("/uploads/:id", async (req: Request, res: Response) => {
     let doc = await UserDocument.findById(docId).populate("owner", "username").populate("editors", "username");
     if (!doc) doc = await UserDocument.findOne({ shareToken: docId }).populate("owner", "username").populate("editors", "username");
 
-    const filePath = doc?.filepath ? path.join(process.cwd(), "uploads", doc.filepath) : path.join(process.cwd(), "uploads", docId);
+    const uploadsDir = process.env.UPLOAD_DIR || "/uploads";
+    const filePath = doc?.filepath ? path.join(uploadsDir, doc.filepath) : path.join(uploadsDir, docId);
     if (!fs.existsSync(filePath)) return res.status(404).send("File not found");
 
     return res.sendFile(filePath);
