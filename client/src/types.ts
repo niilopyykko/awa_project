@@ -10,6 +10,7 @@ export interface IDocument {
   createdAt: string
   updatedAt: string
   filepath?: string
+  shareToken?: string
   content?: string
   editors?: IUser[]
   isVisibleNonAuth?: boolean

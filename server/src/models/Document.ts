@@ -26,6 +26,7 @@ const userDocumentSchema = new Schema({
     content: { type: String, default: null },
     filepath: { type: String, default: null },
     shareToken: { type: String },
+    id: { type: String },
     readOnlyLink: { type: String },
     lockedBy: { type: Schema.Types.ObjectId, ref: "User" },
     lockedAt: { type: Date, default: null },

@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default function DocumentCard({ doc, currentUser, onUpdated, compact }: Props) {
-    const { token } = useAuth();
+    const { user } = useAuth();
     const router = useRouter();
     const [fileUrl, setFileUrl] = useState<string | null>(null);
 
@@ -29,12 +29,14 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
 
     useEffect(() => {
         const fetchFile = async () => {
-            if (!doc._id || !doc.filepath) return;
+            const fileKey = doc._id || doc.shareToken;
+            if (!fileKey) return;
             try {
-                const res = await fetch(`/api/proxy/uploads/${doc._id}`, {
+                const res = await fetch(`/api/proxy/uploads/${fileKey}`, {
                     method: 'GET',
                     credentials: 'include',
                 });
+
                 if (!res.ok) {
                     console.error("Failed to fetch file", res.status);
                     setFileUrl(null);
@@ -49,7 +51,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
             }
         };
         fetchFile();
-    }, [doc._id, doc.filepath]);
+    }, [doc._id, doc.shareToken]);
 
     const renderPlainText = (html: string) => {
         const div = document.createElement("div");
@@ -101,7 +103,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
 
                 <div className="flex flex-col items-end gap-1 shrink-0">
                     <div className="flex items-center gap-2">
-                        {!isTrashed && !isImage && !isVideo && (
+                        {!isTrashed && !isImage && !isVideo && user && (
                             <button
                                 onClick={openEditor}
                                 className="px-2 py-1 text-xs rounded-md bg-blue-500 hover:bg-blue-600"
