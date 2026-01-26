@@ -223,7 +223,7 @@ router.post("/documents/:id/trash", validateToken, async (req: CustomRequest, re
 
     const userId = req.user!.id;
     const isOwner = String(doc.owner) === userId;
-    const editorsArr: string[] = (doc.editors || []).map(e => (e._id ? e._id.toString() : e));
+    const editorsArr: string[] = (doc.editors || []).map((e: any) => (e._id ? e._id.toString() : e.toString()));
     const isEditor = editorsArr.includes(userId);
 
     if (isOwner) {
@@ -292,7 +292,7 @@ router.get("/documents/:id", async (req: Request, res: Response) => {
     if (!doc) return res.status(404).json({ message: "Document not found" });
 
     const isOwner = String((doc.owner as any)?._id || doc.owner) === String(userId);
-    const editorsArr: string[] = (doc.editors || []).map(e => (e._id ? e._id.toString() : e));
+    const editorsArr: string[] = (doc.editors || []).map((e: any) => (e._id ? e._id.toString() : e.toString()));
     const isEditor = userId ? editorsArr.includes(String(userId)) : false;
 
     if (!doc.isVisibleNonAuth && !isOwner && !isEditor) return res.status(403).json({ message: "Forbidden" });
@@ -357,7 +357,7 @@ router.get("/documents/:id/pdf", async (req: Request, res: Response) => {
 // ------------------------
 router.get("/uploads/:id", async (req: Request, res: Response) => {
   try {
-    const docId = req.params.id;
+    const docId = String(req.params.id);
     let doc = await UserDocument.findById(docId).populate("owner", "username").populate("editors", "username");
     if (!doc) doc = await UserDocument.findOne({ shareToken: docId }).populate("owner", "username").populate("editors", "username");
 
