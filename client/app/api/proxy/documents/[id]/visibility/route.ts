@@ -37,7 +37,7 @@ export async function POST(req: NextRequest,   { params }: { params: Promise<{ i
   }
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const res = await fetch(`${BACKEND_URL}/api/documents/${id}`, {
     headers: req.headers,
