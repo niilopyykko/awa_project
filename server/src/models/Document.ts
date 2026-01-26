@@ -8,8 +8,8 @@ interface IUserDocument extends Document {
     content: string;
     id?: string;
     filepath: string;
-    shareToken: string;
-    readOnlyLink: string;
+    shareToken?: string;
+    readOnlyLink?: string;
     lockedBy?: mongoose.Types.ObjectId;
     lockedAt?: Date;
     lockExpiresAt?: Date;

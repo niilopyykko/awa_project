@@ -9,6 +9,14 @@ import { useEffect, useState } from "react";
 const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
 const ORIGIN = API.replace(/\/api$/, '')
 
+type StatusInfo = { label: string; colorClass: string };
+function computeStatus({ isPublic, hasShareLink, hasEditorsAssigned }: { isPublic?: boolean; hasShareLink?: boolean; hasEditorsAssigned?: boolean; }): StatusInfo {
+    if (isPublic) return { label: 'Public', colorClass: 'bg-red-500 text-text' };
+    if (hasShareLink) return { label: 'Link only', colorClass: 'bg-text-green text-text' };
+    if (hasEditorsAssigned) return { label: 'Shared', colorClass: 'bg-text-purple text-text' };
+    return { label: 'Private', colorClass: 'bg-text-muted text-text' };
+}
+
 interface Props {
     doc: IDocument;
     currentUser?: string | null;
@@ -28,6 +36,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
     const isGif = ext === "gif";
     const isVideo = ["mp4", "webm", "ogg"].includes(ext);
     const isTrashed = Boolean(doc.trash);
+    const status = computeStatus({ isPublic: doc.isVisibleNonAuth, hasShareLink: Boolean(doc.shareToken), hasEditorsAssigned: Boolean(doc.editors && doc.editors.length > 0) });
 
     useEffect(() => {
         const fetchFile = async () => {
@@ -82,15 +91,14 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
 
     return (
         <div
-            className={`flex flex-col gap-3 p-2 rounded border-2
-        ${compact ? "bg-amber-700 dark:bg-amber-900 border-amber-400 dark:border-amber-600" : "bg-amber-800 dark:bg-amber-900 border-amber-200 dark:border-amber-600"}`}
+            className={`flex flex-col gap-3 p-3 rounded-lg border-2 bg-bg-toolbar border-border text-text`}
         >
             {/* Header + actions */}
             <div className="flex flex-col sm:flex-row items-start gap-2">
-                <div className="flex-1 min-w-0 rounded-md shadow-2xl bg-amber-700 dark:bg-amber-950 p-2">
-                    <h3 className="font-bold truncate text-sm md:text-lg text-white">{doc.name}</h3>
+                <div className="flex-1 min-w-0 rounded-md shadow-md bg-background border border-border p-3">
+                    <h3 className="font-bold truncate text-sm md:text-lg text-text">{doc.name}</h3>
 
-                    <div className={`mt-1 text-sm text-[color:var(--text-muted)] ${compact ? "flex gap-2" : "flex flex-col gap-1"}`}>
+                    <div className={`mt-1 text-sm text-text-muted ${compact ? "flex gap-2" : "flex flex-col gap-1"}`}>
                         <span className="hidden md:block truncate">
                             Uploaded by <b>{doc.owner?.username ?? "Unknown"}</b>
                         </span>
@@ -121,13 +129,16 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
                             editors={doc.editors?.map(e => e.username) ?? []}
                             currentUsername={currentUser ?? undefined}
                             hasFile={Boolean(doc.filepath)}
+                            isPublic={Boolean(doc.isVisibleNonAuth)}
+                            hasShareLink={Boolean(doc.shareToken)}
+                            hasEditorsAssigned={Boolean(doc.editors && doc.editors.length > 0)}
                             onUpdated={onUpdated}
                         />
                     </div>
 
-                    <div className="hidden md:flex flex-col items-end gap-1 text-sm">
-                        <span className="px-3 py-1 rounded font-medium bg-blue-200 dark:bg-blue-800 text-[color:var(--text)]">
-                            {doc.isVisibleNonAuth ? "Public" : "Private*"}
+                    <div className="hidden md:flex flex-col items-end gap-1 text-md">
+                        <span className={`px-2 rounded-sm font-semibold ${status.colorClass}`}>
+                            {status.label}
                         </span>
                         {doc.trash && (
                             <span className="px-3 py-1 rounded font-medium bg-red-600 dark:bg-red-700 text-white">
@@ -156,15 +167,15 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
                         />
                     </div>
                 ) : (
-                    <a href={fileUrl} target="_blank" rel="noreferrer" className="underline text-[color:var(--text-blue)]">
+                    <a href={fileUrl} target="_blank" rel="noreferrer" className="underline text-text-blue">
                         Download
                     </a>
                 )
             )}
 
             {!fileUrl && doc.content && !compact && (
-                <div className={`relative h-40 rounded-2xl bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 p-2 overflow-hidden ${isTrashed ? "opacity-60" : ""}`}>
-                    <p className="text-sm md:text-base text-[color:var(--text)]">
+                <div className={`relative h-40 rounded-2xl bg-bg-toolbar border border-border p-3 overflow-hidden ${isTrashed ? "opacity-60" : ""}`}>
+                    <p className="text-sm md:text-base text-text">
                         {renderPlainText(doc.content)}
                     </p>
                 </div>

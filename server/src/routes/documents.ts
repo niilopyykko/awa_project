@@ -92,12 +92,7 @@ router.post(
         return res.json({ message: "Document updated", document: updated });
       }
 
-      // Create new document
-      const shareToken = randomUUID();
-      // PUBLIC_SERVER_URL is the externally reachable host (e.g., https://app.example.com)
-      // Fallbacks keep backward compatibility but may point to an internal hostname if not set.
-      const PUBLIC_URL = process.env.PUBLIC_SERVER_URL || `http://localhost:${process.env.PORT}`;
-      const readOnlyLink = `${PUBLIC_URL}/documents/${shareToken}/readonly`;
+      // Create new document (shareToken and readOnlyLink generated on-demand when user clicks "Get Share Link")
       const newDoc = new UserDocument({
         name: name?.trim() || "Untitled",
         content: content || "",
@@ -105,13 +100,11 @@ router.post(
         isVisibleNonAuth: isPublic === "true" || isPublic === true,
         editors: editorIds,
         filepath: req.file?.path ?? null,
-        shareToken,
-        readOnlyLink,
         createdAt: new Date(),
       });
 
       await newDoc.save();
-      return res.status(201).json({ message: "File uploaded", readOnlyLink: newDoc.readOnlyLink });
+      return res.status(201).json({ message: "File uploaded", document: newDoc });
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: "Internal server error" });
@@ -193,8 +186,48 @@ router.post("/documents/:id/renewLock", validateToken, async (req: CustomRequest
 });
 
 // ------------------------
-// Rename document
+// Generate share link on-demand
 // ------------------------
+router.post("/documents/:id/generate-share-link", validateToken, async (req: CustomRequest, res: Response) => {
+  try {
+    const docId = req.params.id;
+    const userId = req.user!.id;
+
+    if (!Types.ObjectId.isValid(docId)) {
+      return res.status(400).json({ message: "Invalid document id" });
+    }
+
+    const doc = await UserDocument.findById(docId);
+    if (!doc) return res.status(404).json({ message: "Document not found" });
+
+    const isOwner = doc.owner.toString() === userId;
+    const editorsArr = (doc.editors || []).map((e: any) => (e._id ? e._id.toString() : e));
+    const isEditor = editorsArr.includes(userId);
+
+    if (!isOwner && !isEditor) return res.status(403).json({ message: "No permission" });
+
+    // If shareToken already exists, return it
+    if (doc.shareToken && doc.readOnlyLink) {
+      return res.json({ readOnlyLink: doc.readOnlyLink, shareToken: doc.shareToken });
+    }
+
+    // Generate new shareToken and readOnlyLink
+    const shareToken = randomUUID();
+    const PUBLIC_URL = process.env.PUBLIC_SERVER_URL || `http://localhost:${process.env.PORT}`;
+    const readOnlyLink = `${PUBLIC_URL}/documents/${shareToken}/readonly`;
+
+    doc.shareToken = shareToken;
+    doc.readOnlyLink = readOnlyLink;
+    await doc.save();
+
+    return res.json({ readOnlyLink: doc.readOnlyLink, shareToken: doc.shareToken });
+  } catch (err) {
+    console.error("generate-share-link error:", err);
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return res.status(500).json({ message });
+  }
+});
+
 router.post("/documents/:id/rename", validateToken, async (req: CustomRequest, res: Response) => {
   try {
     const docId = req.params.id;
@@ -231,7 +264,7 @@ router.post("/documents/:id/share", validateToken, async (req: CustomRequest, re
   try {
     const docId = req.params.id;
     const userId = req.user!.id;
-    const { collaborator, remove } = req.body || {};
+    const { collaborator, remove, removeUsername } = req.body || {};
 
     const doc = await UserDocument.findById(docId);
     if (!doc) return res.status(404).json({ message: "Document not found" });
@@ -244,6 +277,23 @@ router.post("/documents/:id/share", validateToken, async (req: CustomRequest, re
     if (remove) {
       if (!isEditor) return res.status(403).json({ message: "No permission" });
       doc.editors = (doc.editors || []).filter(e => (e._id?.toString() || e.toString()) !== userId);
+      await doc.save();
+
+      const populated = await doc.populate([
+        { path: "owner", select: "username" },
+        { path: "editors", select: "username" },
+      ]);
+
+      return res.json({ message: "Removed collaborator", document: populated });
+    }
+
+    // Owner can remove a specific collaborator
+    if (removeUsername) {
+      if (!isOwner) return res.status(403).json({ message: "No permission" });
+      const targetUser = await User.findOne({ username: removeUsername.trim() });
+      if (!targetUser) return res.status(404).json({ message: "User not found" });
+      const targetId = targetUser._id.toString();
+      doc.editors = (doc.editors || []).filter(e => (e._id?.toString() || e.toString()) !== targetId);
       await doc.save();
 
       const populated = await doc.populate([
@@ -282,6 +332,45 @@ router.post("/documents/:id/share", validateToken, async (req: CustomRequest, re
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ------------------------
+// Revoke share link
+// ------------------------
+router.post("/documents/:id/revoke-share-link", validateToken, async (req: CustomRequest, res: Response) => {
+  try {
+    const docId = req.params.id;
+    const userId = req.user!.id;
+
+    if (!Types.ObjectId.isValid(docId)) {
+      return res.status(400).json({ message: "Invalid document id" });
+    }
+
+    const doc = await UserDocument.findById(docId);
+    if (!doc) return res.status(404).json({ message: "Document not found" });
+
+    const isOwner = doc.owner.toString() === userId;
+    const editorsArr = (doc.editors || []).map((e: any) => (e._id ? e._id.toString() : e));
+    const isEditor = editorsArr.includes(userId);
+
+    // Only owner can revoke link
+    if (!isOwner) return res.status(403).json({ message: "No permission" });
+
+    doc.shareToken = undefined as any;
+    doc.readOnlyLink = undefined as any;
+    await doc.save();
+
+    const populated = await doc.populate([
+      { path: "owner", select: "username" },
+      { path: "editors", select: "username" },
+    ]);
+
+    return res.json({ message: "Share link revoked", document: populated });
+  } catch (err) {
+    console.error("revoke-share-link error:", err);
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return res.status(500).json({ message });
   }
 });
 

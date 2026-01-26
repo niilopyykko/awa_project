@@ -12,15 +12,16 @@
     "client:prod": "npm run start --prefix client",
     "start": "concurrently \"npm run server:prod\" \"npm run client:prod\"",
     "update:all": "cd client && npx ncu -u && npm install && cd ../server && npx ncu -u && npm install"
-
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
     "concurrently": "^9.2.1",
-    "cors": "^2.8.6"
+    "cors": "^2.8.6",
+    "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19"

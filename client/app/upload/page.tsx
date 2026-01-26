@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { FormEvent, useState } from "react"
+import { useRouter } from "next/navigation"
 import useDocuments from "../hooks/useDocuments";
 import { useAuth } from "../context/AuthContext";
 
@@ -13,6 +14,7 @@ const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 export default function Upload() {
   const { user } = useDocuments();
   const { logout } = useAuth();
+  const router = useRouter();
 
 
   const [file, setFile] = useState<File | null>(null)
@@ -52,8 +54,9 @@ export default function Upload() {
       if (response.ok) {
         console.log('File uploaded successfully')
         const data = await response.json()
-        setViewLink(data.readOnlyLink)
         setIsUploading(false)
+        // Redirect to drive after successful upload
+        router.push('/')
       } else {
         setIsUploading(false)
         let errorBody = null
@@ -150,8 +153,8 @@ export default function Upload() {
                   <label htmlFor="isPublic" className="text-md font-semibold tracking-wide text-text drop-shadow-sm drop-shadow-white">Make public</label>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     disabled={isUploading}
                     className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-700 dark:to-pink-700 dark:hover:from-purple-800 dark:hover:to-pink-800 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                     {isUploading ? 'Uploading...' : 'Upload'}

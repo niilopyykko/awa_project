@@ -14,10 +14,21 @@ interface FileActionsProps {
     currentUsername?: string
     editors?: string[]
     hasFile?: boolean
+    isPublic?: boolean
+    hasShareLink?: boolean
+    hasEditorsAssigned?: boolean
     onUpdated?: (opts?: { switchToDrive?: boolean }) => void
 }
+type StatusInfo = { label: string; colorClass: string };
 
-export default function FileActions({ fileId, fileName, isTrashed = false, fileOwner, currentUsername, editors = [], hasFile = false, onUpdated }: FileActionsProps) {
+function computeStatus({ isPublic, hasShareLink, hasEditorsAssigned }: { isPublic?: boolean; hasShareLink?: boolean; hasEditorsAssigned?: boolean; }): StatusInfo {
+    if (isPublic) return { label: 'Public', colorClass: 'bg-green-200 dark:bg-green-800 text-green-900 dark:text-green-100' };
+    if (hasShareLink) return { label: 'Link only', colorClass: 'bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100' };
+    if (hasEditorsAssigned) return { label: 'Shared', colorClass: 'bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-purple-100' };
+    return { label: 'Private', colorClass: 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100' };
+}
+
+export default function FileActions({ fileId, fileName, isTrashed = false, fileOwner, currentUsername, editors = [], hasFile = false, isPublic = false, hasShareLink = false, hasEditorsAssigned = false, onUpdated }: FileActionsProps) {
     const router = useRouter();
     const { token } = useAuth();
     // Strict props-based visibility: require currentUsername prop and owner match
@@ -25,6 +36,8 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
     const isOwner = fileOwner && String(currentUsername) === String(fileOwner);
     const isEditor = Array.isArray(editors) && editors.map(String).includes(String(currentUsername));
     if (!isOwner && !isEditor) return null;
+
+    const status = computeStatus({ isPublic, hasShareLink, hasEditorsAssigned });
 
     const api = async (path: string, method = 'POST', callOnUpdated = true) => {
         try {
@@ -293,8 +306,9 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
     };
 
     const handleLink = async () => {
-        // Read-only links are created at upload time; fetch document and read readOnlyLink
+        // Generate share link on-demand when user clicks the button
         try {
+            // First, try to fetch existing link
             const res = await fetch(`/api/proxy/documents/${fileId}`, {
                 method: 'GET',
                 credentials: 'include'
@@ -302,12 +316,33 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
             if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
             const data = await res.json();
             let link = data?.readOnlyLink || data?.document?.readOnlyLink || '';
+
+            // If no link exists, generate one on-demand
             if (!link) {
-                // fallback: look for a JSON property named readOnlyLink
-                const flat = JSON.stringify(data || {});
-                const m = flat.match(/"readOnlyLink"\s*:\s*"([^"]+)"/i);
-                if (m && m[1]) link = m[1];
+                const generateRes = await fetch(`/api/proxy/documents/${fileId}/generate-share-link`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (!generateRes.ok) {
+                    let errMsg = `Generate link failed: ${generateRes.status}`;
+                    try {
+                        const errBody = await generateRes.json();
+                        if (errBody?.message) errMsg += ` - ${errBody.message}`;
+                    } catch {
+                        try {
+                            const errText = await generateRes.text();
+                            if (errText) errMsg += ` - ${errText}`;
+                        } catch { }
+                    }
+                    throw new Error(errMsg);
+                }
+                const generateData = await generateRes.json();
+                link = generateData?.readOnlyLink || '';
+                // refresh state so cards/status reflect new link
+                if (onUpdated) onUpdated();
+                try { router.refresh(); } catch { }
             }
+
             if (link) {
                 try {
                     await navigator.clipboard.writeText(link);
@@ -316,11 +351,58 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
                     prompt('View-only link (copy manually):', link);
                 }
             } else {
-                alert('No read-only link available for this file.');
+                alert('Could not generate read-only link for this file.');
             }
         } catch (err) {
             console.error(err);
-            alert('Could not fetch read-only link. See console for details.');
+            alert('Could not get read-only link. See console for details.');
+        }
+    };
+
+    const handleRevokeLink = async () => {
+        if (!confirm('Revoke the share link? It will stop working for everyone.')) return;
+        try {
+            const res = await fetch(`/api/proxy/documents/${fileId}/revoke-share-link`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            if (!res.ok) {
+                let msg = `Revoke link failed: ${res.status}`;
+                try { const j = await res.json(); if (j?.message) msg += ` - ${j.message}`; } catch { }
+                alert(msg);
+                return;
+            }
+            alert('Share link revoked');
+            if (onUpdated) onUpdated();
+            try { router.refresh(); } catch { }
+        } catch (err) {
+            console.error(err);
+            alert('Could not revoke link. See console for details.');
+        }
+    };
+
+    const handleRemoveCollaborator = async () => {
+        const username = prompt('Remove collaborator (username)');
+        if (!username || username.trim().length < 2) return;
+        try {
+            const res = await fetch(`/api/proxy/documents/${fileId}/share`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ removeUsername: username.trim() })
+            });
+            if (!res.ok) {
+                let msg = `Remove collaborator failed: ${res.status}`;
+                try { const j = await res.json(); if (j?.message) msg += ` - ${j.message}`; } catch { }
+                alert(msg);
+                return;
+            }
+            alert(`Removed ${username}`);
+            if (onUpdated) onUpdated();
+            try { router.refresh(); } catch { }
+        } catch (err) {
+            console.error(err);
+            alert('Could not remove collaborator. See console for details.');
         }
     };
 
@@ -335,11 +417,21 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
                 {!isTrashed ? (
                     <>
                         <DropdownItem key="rename" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleRename}>Rename</DropdownItem>
-                        <DropdownItem key="copy" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleCopy}>Create Copy</DropdownItem>
+                        <DropdownItem key="copy" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleCopy}>Create a Copy</DropdownItem>
                         <DropdownItem key="download" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleDownload}>Download</DropdownItem>
                         <DropdownItem key="share" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleShare} >Share</DropdownItem>
-                        <DropdownItem key="visibility" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleTogglePublic}>Make Public/Private</DropdownItem>
+                        {hasEditorsAssigned ? (<DropdownItem key="remove-collab" className="cursor-pointer m-1 px-1 text-center size-auto bg-purple-200 dark:bg-purple-800 rounded-md text-black dark:text-white" onClick={handleRemoveCollaborator}>
+                            Remove Collaborator
+                        </DropdownItem>) : (null)}
+                        <DropdownItem
+                            key="visibility"
+                            className={`cursor-pointer m-1 px-1 text-center size-auto rounded-md ${!isPublic ? ('bg-amber-200 dark:bg-amber-700 text-amber-900 dark:text-amber-50') : ('bg-green-200 dark:bg-green-700 text-green-900 dark:text-green-50')}`}
+                            onClick={handleTogglePublic}
+                        >
+                            {isPublic ? 'Make Private' : 'Make Public'}
+                        </DropdownItem>
                         <DropdownItem key="link" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleLink}>Get Share Link</DropdownItem>
+                        {hasShareLink ? (<DropdownItem key="revoke-link" className="cursor-pointer m-1 px-1 text-center size-auto bg-red-200 dark:bg-red-800 rounded-md text-black dark:text-white" onClick={handleRevokeLink}>Revoke Share Link</DropdownItem>) : (null)}
                         <DropdownItem key="trash" className="cursor-pointer m-1 px-1 text-center size-auto bg-yellow-300 dark:bg-yellow-700 rounded-md text-black dark:text-white" onClick={handleTrash}>Move to Trash</DropdownItem>
 
                     </>

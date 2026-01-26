@@ -12,6 +12,7 @@
   --text-red: #991b1b;
   --bg-input: #ffffff;
   --bg-toolbar: #f3f4f6;
+  --bg-red: #c41313;
   --border: #d1d5db;
 }
 
@@ -27,6 +28,7 @@
   --color-text-red: var(--text-red);
   --color-bg-input: var(--bg-input);
   --color-bg-toolbar: var(--bg-toolbar);
+  --color-bg-red: var(--bg-red);
   --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -45,6 +47,7 @@
   --text-red: #fca5a5;
   --bg-input: #374151;
   --bg-toolbar: #1f2937;
+  --bg-red: #c41313;
   --border: #4b5563;
 }
 
