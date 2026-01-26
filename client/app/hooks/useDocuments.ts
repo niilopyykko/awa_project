@@ -14,7 +14,10 @@ export default function useDocuments() {
   const getDocuments = useCallback(async () => {
     try {
       const endpoint = user ? '/api/proxy/documents' : '/api/proxy/publicDocuments'
-      const response = await fetch(endpoint, { headers: { 'Content-Type': 'application/json' } })
+      const response = await fetch(endpoint, { 
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
 
       if (!response.ok) {
         // 404 means no documents; clear list. For other errors, log and clear as well.

@@ -13,7 +13,7 @@ import cors, { CorsOptions } from 'cors'
 dotenv.config()
 
 // Ensure uploads directory exists (some routes may read files directly)
-const uploadsDir = process.env.UPLOAD_DIR || "/uploads"
+const uploadsDir = process.env.UPLOAD_DIR || "./uploads"
 if (!fs.existsSync(uploadsDir)) {
     try {
         fs.mkdirSync(uploadsDir, { recursive: true })

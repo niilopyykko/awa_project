@@ -17,17 +17,18 @@ const router: Router = Router();
 router.get("/documents", validateToken, async (req: CustomRequest, res: Response) => {
   try {
     const userId = req.user!.id;
+    const userObjectId = new Types.ObjectId(userId);
 
     const documents: IUserDocument[] = await UserDocument.find({
       $and: [
         {
           $or: [
-            { owner: userId },
-            { editors: userId },
+            { owner: userObjectId },
+            { editors: userObjectId },
             { isVisibleNonAuth: true },
           ],
         },
-        { $or: [{ owner: userId }, { trash: { $ne: true } }] },
+        { $or: [{ owner: userObjectId }, { trash: { $ne: true } }] },
       ],
     })
       .populate("owner", "username")

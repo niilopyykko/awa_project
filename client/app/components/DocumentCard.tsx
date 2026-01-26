@@ -38,11 +38,12 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
                 });
 
                 if (!res.ok) {
-                    console.error("Failed to fetch file", res.status);
+                    console.error("Failed to fetch file", res.status, res.statusText);
                     setFileUrl(null);
                     return;
                 }
                 const blob = await res.blob();
+                console.log("File fetched successfully, size:", blob.size, "type:", blob.type);
                 const url = URL.createObjectURL(blob);
                 setFileUrl(url);
             } catch (err) {
@@ -136,19 +137,16 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
             </div>
 
             {/* Media / preview */}
-            {fileUrl && !compact && (
+            {fileUrl && (
                 isVideo ? (
-                    <div className="max-h-60 overflow-hidden rounded flex justify-center">
+                    <div className={`${compact ? "max-h-20" : "max-h-60"} overflow-hidden rounded flex justify-center`}>
                         <video src={fileUrl} controls className="h-full w-auto object-contain" />
                     </div>
                 ) : isGif || isImage ? (
-                    <Image
+                    <img
                         src={fileUrl}
                         alt={doc.name}
-                        width={400}
-                        height={200}
-                        unoptimized
-                        className="w-full max-h-60 object-contain"
+                        className={`w-full ${compact ? "max-h-20" : "max-h-60"} object-contain rounded`}
                     />
                 ) : (
                     <a href={fileUrl} target="_blank" rel="noreferrer" className="underline">

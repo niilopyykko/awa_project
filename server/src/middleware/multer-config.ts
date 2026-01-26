@@ -2,7 +2,7 @@ import multer, { StorageEngine, Multer } from "multer"
 import path from "path"
 import fs from "fs"
 
-const uploadsDir = process.env.UPLOAD_DIR || "/uploads"
+const uploadsDir = process.env.UPLOAD_DIR || "./uploads"
 
 // Ensure the uploads directory exists
 if (!fs.existsSync(uploadsDir)) {
