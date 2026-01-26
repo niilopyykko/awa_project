@@ -1,5 +1,6 @@
 # uploads folder (user uploaded files)
-uploads/
+!server/uploads
+server/uploads/*
 
 # Environment files (do not commit secrets)
 # Ignore any .env file in any subdirectory, but allow committed examples
