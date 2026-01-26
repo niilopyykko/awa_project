@@ -51,15 +51,16 @@ export default function Login() {
 
   return (
     <div className="w-full min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center">
-      <form onSubmit={(e) => { e.preventDefault(); fetchData(username, password); }} className="bg-amber-50 flex flex-col items-center max-w-md m-0 p-4 space-y-3 rounded-md">
+      <form onSubmit={(e) => { e.preventDefault(); fetchData(username, password); }} className="bg-white dark:bg-gray-800 flex flex-col items-center max-w-md m-0 p-6 space-y-4 rounded-lg shadow-lg">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Log In</h2>
         <input type="text" placeholder="username" onChange={(e) => setUsername(e.target.value)}
-          className="border-red-600 border-2 m-2 text-black md:text-3xl text-2xl rounded-md" />
+          className="border-2 border-purple-500 dark:border-purple-600 bg-white dark:bg-gray-700 text-black dark:text-white p-2 w-full rounded-md focus:ring-2 focus:ring-purple-500" />
         <input type="password" placeholder="password" onChange={(e) => setPassword(e.target.value)}
-          className="border-red-600 border-2 m-2 text-black md:text-3xl text-2xl rounded-md" />
-        <button type="submit" className="bg-red-800 text-yellow-600 m-2 border-2 text-2xl px-2 rounded-md hover:bg-amber-600 hover:text-black active:bg-red-600">Log in</button>
-        <Link href="/register" className="text-blue-600 text-md m-2 underline">Not registered? Sign up</Link>
+          className="border-2 border-purple-500 dark:border-purple-600 bg-white dark:bg-gray-700 text-black dark:text-white p-2 w-full rounded-md focus:ring-2 focus:ring-purple-500" />
+        <button type="submit" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-700 dark:to-pink-700 dark:hover:from-purple-800 dark:hover:to-pink-800 text-white font-semibold py-2 px-8 rounded-lg shadow-md hover:shadow-lg transition-all">Log in</button>
+        <Link href="/register" className="text-purple-600 dark:text-purple-400 text-sm underline hover:text-purple-700 dark:hover:text-purple-300">Not registered? Sign up</Link>
       </form>
-      {!userPrompt ? (<></>) : (<p className="max-w-md mx-auto border-2 border-blue-200 p-2 m-4 text-center rounded bg-white text-black">{userPrompt}</p>)}
+      {!userPrompt ? (<></>) : (<p className="max-w-md mx-auto border-2 border-red-400 dark:border-red-600 p-3 m-4 text-center rounded bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200">{userPrompt}</p>)}
     </div >
   )
 }

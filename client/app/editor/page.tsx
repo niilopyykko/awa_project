@@ -5,8 +5,6 @@ import { useEffect, useState, useRef, FormEvent } from 'react'
 import useDocuments from '../hooks/useDocuments'
 import { useAuth } from '../context/AuthContext'
 
-const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
-const ORIGIN = API.replace(/\/api$/, '')
 
 type HTMLContent = string
 
@@ -24,9 +22,9 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
     const { logout } = useAuth();
     const [content, setContent] = useState<string>(driveContent ?? '<p>Text Content here...</p>')
     const [docName, setDocName] = useState<string>(driveName ?? '')
-    const [editors, setEditors] = useState<string>(driveEditors ?? '"john1, john2, john3" : ')
-    const [commenter, setCommenter] = useState<string>(driveCommenter ?? '"john1, john2, john3" : ')
-    const [viewer, setViewer] = useState<string>(driveViewer ?? '"john1, john2, john3" : ')
+    const [editors, setEditors] = useState<string>(driveEditors ?? '')
+    const [commenter, setCommenter] = useState<string>(driveCommenter ?? '')
+    const [viewer, setViewer] = useState<string>(driveViewer ?? '')
     const [isPublic, setIsPublic] = useState<boolean>(false)
 
     const [isLocked, setIsLocked] = useState<boolean | null>(null)
@@ -398,117 +396,124 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
         }
     }
 
-    return (<div className="p-8">
+    return (<div className="p-4 sm:p-8">
 
-        <div className="max-w-4xl mx-auto ">
-            <div className="mb-8 shadow-md">
+        <div className="max-w-4xl mx-auto">
+            <div className="mb-8 shadow-lg rounded-lg overflow-hidden">
                 <>
                     {!user ? (
-                        <div className='flex flex-col bg-fuchsia-300 rounded-md text-center p-2'>
-                            <p className="text-gray-600 text-2xl">Please login to see text editor</p>
-                            <Link href="/login" className="bg-amber-500 border-2 p-1 m-2 border-amber-50 text-amber-900 text-lg">Log in</Link>
+                        <div className='flex flex-col bg-linear-to-br from-purple-400 to-pink-400 dark:from-purple-600 dark:to-pink-600 rounded-lg shadow-md text-center p-6'>
+                            <p className="text-white text-xl sm:text-2xl font-semibold mb-4">Please login to access the editor</p>
+                            <Link href="/login" className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-purple-600 dark:text-purple-400 font-medium py-2 px-6 rounded-lg shadow transition-colors">Log in</Link>
                         </div>
-                    ) : (<div className='flex flex-col bg-fuchsia-300 rounded-md text-center p-4'>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">TextEditor</h1>
-                        <p className="text-gray-600">Basic formatting tools</p>
-                        <ul className='bg-gray-100 border-b border-gray-200 text-left rounded-t-md'>
-                            <li>
-                                <span className='px-6 py-2 text-left text-sm font-semibold text-gray-700'>BOLD</span> <span className='pl-10 py-2 text-left text-sm font-semibold text-violet-700'>= CTRL+B</span>
-                            </li>
-                            <li>
-                                <span className='px-6 py-2 text-left text-sm font-semibold text-gray-700'>ITALIC</span> <span className='pl-9 py-2 text-left text-sm font-semibold text-violet-700'>= CTRL+I</span>
-                            </li>
-                            <li>
-                                <span className='px-6 py-2 text-left text-sm font-semibold text-gray-700'>UNDERLINE</span> <span className=' py-2 text-left text-sm font-semibold text-violet-700'>= CTRL+U</span>
-                            </li>
-                            <li>
-                                <span className='pl-6 py-2 text-left text-sm font-semibold text-gray-700'>MORE @ </span><Link href="/shortcuts" className=' py-2 text-left text-sm font-semibold text-gray-700 underline'>HERE</Link> <span className='bg-gray-100 px-2 py-1 rounded text-gray-700 font-mono text-xs'>Some keybinds may not work</span>
-                            </li>
-                        </ul>
-                        <div className='bg-blue-200 rounded-b-lg p-4'>
+                    ) : (<div className='flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-md'>
+                        <div className='bg-linear-to-r from-purple-500 to-pink-500 dark:from-purple-700 dark:to-pink-700 text-center p-4'>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">Text Editor</h1>
+                            <p className="text-purple-100 text-sm">Create and collaborate on documents</p>
+                        </div>
+                        <div className='bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 p-3 text-sm'>
+                            <div className='flex flex-wrap gap-3 items-center text-gray-700 dark:text-gray-300'>
+                                <span className='font-medium'>Shortcuts:</span>
+                                <span><span className='font-semibold text-purple-600 dark:text-purple-400'>Ctrl+B</span> Bold</span>
+                                <span><span className='font-semibold text-purple-600 dark:text-purple-400'>Ctrl+I</span> Italic</span>
+                                <span><span className='font-semibold text-purple-600 dark:text-purple-400'>Ctrl+U</span> Underline</span>
+                                <Link href="/shortcuts" className='text-purple-600 dark:text-purple-400 hover:underline font-medium'>View all</Link>
+                            </div>
+                        </div>
+                        <div className='p-4 sm:p-6'>
 
-                            <form onSubmit={handleSubmit}>
-                                <label htmlFor="title" className='text-black mt-2'>Document file name</label>
-                                <input
-                                    type="text"
-                                    id="title"
-                                    placeholder={docName}
-                                    value={docName}
-                                    onChange={(e) => setDocName(e.target.value)}
-                                    className="border p-2 rounded w-full mb-2 text-black"
-                                />
-                                <Tiptap content={content} onChange={(html: HTMLContent) => setContent(html)} />
-                                <div>
-                                    <div className='mt-4'>
+                            <form onSubmit={handleSubmit} className='space-y-4'>
+                                <div className="mb-6">
+                                    <label htmlFor="title" className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Document Name</label>
+                                    <input
+                                        type="text"
+                                        id="title"
+                                        placeholder={docName || "Document name"}
+                                        value={docName}
+                                        onChange={(e) => setDocName(e.target.value)}
+                                        className="border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-1 rounded-md w-full focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent transition-shadow"
+                                    />
+                                </div>
+                                <Tiptap content={content} onChange={(html: HTMLContent) => setContent(html)}  />
+                                <div className='space-y-3 mt-6'>
+                                    <div >
                                         <label
                                             htmlFor="viewers"
-                                            className="block mb-1 text-sm font-medium text-gray-700">
+                                            className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Viewers
                                         </label>
                                         <input
                                             type="text"
                                             id="viewers"
                                             name="viewers"
-                                            placeholder={viewer}
-                                            className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
+                                            placeholder={viewer || "WIP, does not do anything"}
+                                            className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 text-sm rounded-md focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent block w-full px-3 py-2 transition-shadow"
                                             value={viewer}
                                             onChange={(e) => setViewer(e.target.value)} />
                                     </div>
-                                    <div className='mt-4'>
+                                    <div>
                                         <label
                                             htmlFor="commenter"
-                                            className="block mb-1 text-sm font-medium text-gray-700">
+                                            className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Commenter
                                         </label>
                                         <input
                                             type="text"
                                             id="commenter"
                                             name="commenter"
-                                            placeholder={commenter}
-                                            className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
+                                            placeholder={commenter || "WIP, does not do anything"}
+                                            className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 text-sm rounded-md focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent block w-full px-3 py-2 transition-shadow"
                                             value={commenter}
                                             onChange={(e) => setCommenter(e.target.value)} />
                                     </div>
-                                    <div className='mt-4'>
+                                    <div>
                                         <label
                                             htmlFor="editors"
-                                            className="block mb-1 text-sm font-medium text-gray-700">
-                                            Editors
+                                            className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            Editors (comma seperated)
                                         </label>
                                         <input
                                             type="text"
                                             id="editors"
                                             name="editors"
-                                            placeholder={editors}
-                                            className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
+                                            placeholder={editors || "John1, John2, John3..."}
+                                            className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 text-sm rounded-md focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent block w-full px-3 py-2 transition-shadow"
                                             value={editors}
                                             onChange={(e) => setEditors(e.target.value)} />
                                     </div>
                                 </div>
 
-                                <div className="flex items-start mb-6">
-                                    <div className="flex items-center h-5">
-                                        <input
-                                            type="checkbox"
-                                            id="isPublic"
-                                            name="isPublic"
-                                            className="w-4 h-4 border border-gray-300 rounded accent-blue-500"
-                                            checked={isPublic}
-                                            onChange={(e) => setIsPublic(e.target.checked)}
-                                        />
-                                    </div>
-                                    <label htmlFor="isPublic" className="ms-2 text-sm font-medium text-gray-900">Is public?</label>
+                                <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                                    <input
+                                        type="checkbox"
+                                        id="isPublic"
+                                        name="isPublic"
+                                        className="w-4 h-4 border border-gray-300 dark:border-gray-600 rounded accent-purple-600"
+                                        checked={isPublic}
+                                        onChange={(e) => setIsPublic(e.target.checked)}
+                                    />
+                                    <label htmlFor="isPublic" className="text-sm font-medium text-gray-900 dark:text-gray-200">Make document public</label>
                                 </div>
-                                <button type="submit" disabled={isLocked === true} className='bg-blue-500 p-2 mt-4 rounded hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed'>Save</button>
+                                <div className='flex items-center gap-3'>
+                                    <button 
+                                        type="submit" 
+                                        disabled={isLocked === true} 
+                                        className='bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-700 dark:to-pink-700 dark:hover:from-purple-800 dark:hover:to-pink-800 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+                                    >
+                                        Save Document
+                                    </button>
+                                    {draftSaved && (
+                                        <span className='text-xs text-green-600 dark:text-green-400 font-medium'>✓ Draft saved</span>
+                                    )}
+                                </div>
                             </form>
-                            <div className='flex items-center gap-3 mt-2'>
-                                <p className={`text-black p-2 ${isLocked === true ? "" : "hidden"}`}>
-                                    {lockOwner} is editing the document, please wait
-                                </p>
-                                {draftSaved && (
-                                    <span className='text-xs text-gray-600 italic'>Draft saved</span>
-                                )}
-                            </div>
+                            {isLocked && (
+                                <div className='mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-600 rounded'>
+                                    <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                                        🔒 {lockOwner} is currently editing this document
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                     )}

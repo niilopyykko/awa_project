@@ -79,33 +79,34 @@ export default function Upload() {
     <div className="p-6">
       <div className="mx-auto max-w-3xl">
         {!user ? (
-          <div className='flex flex-col bg-fuchsia-300 rounded-md text-center p-2'>
-            <p className="text-gray-600 text-2xl">Please login to see Upload</p>
-            <Link href="/login" className="bg-amber-500 border-2 p-1 m-2 border-amber-50 text-amber-900 text-lg">Log in</Link>
+          <div className='flex flex-col bg-gradient-to-br from-purple-400 to-pink-400 dark:from-purple-600 dark:to-pink-600 rounded-lg shadow-md text-center p-6'>
+            <p className="text-white text-xl font-semibold mb-4">Please login to upload files</p>
+            <Link href="/login" className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-purple-600 dark:text-purple-400 font-medium py-2 px-6 rounded-lg shadow transition-colors">Log in</Link>
           </div>
         ) : (
           <div className="flex flex-col col-1">
-            <div className="bg-fuchsia-300 rounded-lg shadow-md p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Upload File</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-6 mb-6 md:grid-cols-2">
                   <div>
                     <label
                       htmlFor="file"
-                      className="block mb-2.5 text-sm font-medium text-gray-700">
+                      className="block mb-2.5 text-sm font-medium text-gray-700 dark:text-gray-300">
                       File
                     </label>
                     <input
                       type="file"
                       id="file"
                       name="file"
-                      className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
+                      className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-md focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 block w-full px-3 py-2.5"
                       onChange={e => setFile(e.target.files?.[0] ?? null)}
                     />
                   </div>
                   <div>
                     <label
                       htmlFor="editors"
-                      className="block mb-2.5 text-sm font-medium text-gray-700">
+                      className="block mb-2.5 text-sm font-medium text-gray-700 dark:text-gray-300">
                       Editors
                     </label>
                     <input
@@ -113,35 +114,33 @@ export default function Upload() {
                       id="editors"
                       name="editors"
                       placeholder="john1, john2, john3"
-                      className="bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full px-3 py-2.5"
+                      className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-md focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 block w-full px-3 py-2.5"
                       value={editors}
                       onChange={(e) => setEditors(e.target.value)} />
                   </div>
                 </div>
-                <div className="flex items-start mb-6">
-                  <div className="flex items-center h-5">
-                    <input
-                      type="checkbox"
-                      id="isPublic"
-                      name="isPublic"
-                      className="w-4 h-4 border border-gray-300 rounded accent-blue-500"
-                      checked={isPublic}
-                      onChange={(e) => setIsPublic(e.target.checked)}
-                    />
-                  </div>
-                  <label htmlFor="isPublic" className="ms-2 text-sm font-medium text-gray-900">Is public?</label>
+                <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <input
+                    type="checkbox"
+                    id="isPublic"
+                    name="isPublic"
+                    className="w-4 h-4 border border-gray-300 dark:border-gray-600 rounded accent-purple-600"
+                    checked={isPublic}
+                    onChange={(e) => setIsPublic(e.target.checked)}
+                  />
+                  <label htmlFor="isPublic" className="text-sm font-medium text-gray-900 dark:text-gray-200">Make public</label>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button type="submit" className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-md text-sm px-4 py-2.5">Upload</button>
+                  <button type="submit" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-700 dark:to-pink-700 dark:hover:from-purple-800 dark:hover:to-pink-800 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md hover:shadow-lg transition-all">Upload</button>
                 </div>
               </form>
               {viewLink && (
-                <div className="mt-4 flex flex-col justify-center">
-                  <h1 className="m-auto p-2 text-black rounded-md bg-amber-500 border-2">Amazing Copyable link below (click it)</h1>
+                <div className="mt-6 flex flex-col gap-3">
+                  <h3 className="text-center font-semibold text-gray-900 dark:text-white bg-green-100 dark:bg-green-900/30 p-3 rounded-lg border border-green-300 dark:border-green-700">Shareable Link (click to copy)</h3>
                   <button
                     onClick={handleCopy}
-                    className={`border-2 p-2 ${copied ? 'bg-green-500' : 'bg-amber-500'} border-amber-50 m-auto my-2 underline`}>
-                    {copied ? 'Copied!' : viewLink}
+                    className={`border-2 p-3 rounded-lg font-medium transition-all ${copied ? 'bg-green-500 dark:bg-green-700 border-green-600 dark:border-green-500 text-white' : 'bg-purple-100 dark:bg-purple-900/30 border-purple-400 dark:border-purple-600 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800/30'}`}>
+                    {copied ? '✓ Copied!' : viewLink}
                   </button>
                 </div>
               )}

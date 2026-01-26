@@ -83,14 +83,14 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
     return (
         <div
             className={`flex flex-col gap-3 p-2 rounded border-2
-        ${compact ? "bg-amber-700 border-amber-400" : "bg-amber-800 border-amber-200"}`}
+        ${compact ? "bg-amber-700 dark:bg-amber-900 border-amber-400 dark:border-amber-600" : "bg-amber-800 dark:bg-amber-900 border-amber-200 dark:border-amber-600"}`}
         >
             {/* Header + actions */}
             <div className="flex flex-col sm:flex-row items-start gap-2">
-                <div className="flex-1 min-w-0 rounded-md shadow-2xl bg-amber-700 p-2">
-                    <h3 className="font-bold truncate text-sm md:text-lg">{doc.name}</h3>
+                <div className="flex-1 min-w-0 rounded-md shadow-2xl bg-amber-700 dark:bg-amber-950 p-2">
+                    <h3 className="font-bold truncate text-sm md:text-lg text-white">{doc.name}</h3>
 
-                    <div className={`mt-1 text-xs ${compact ? "flex gap-2" : "flex flex-col gap-1"}`}>
+                    <div className={`mt-1 text-xs text-gray-200 dark:text-gray-300 ${compact ? "flex gap-2" : "flex flex-col gap-1"}`}>
                         <span className="hidden md:block truncate">
                             Uploaded by <b>{doc.owner.username}</b>
                         </span>
@@ -108,7 +108,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
                         {!isTrashed && !isImage && !isVideo && user && (
                             <button
                                 onClick={openEditor}
-                                className="px-2 py-1 text-xs rounded-md bg-blue-500 hover:bg-blue-600"
+                                className="px-2 py-1 text-xs rounded-md bg-blue-500 hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                             >
                                 Edit
                             </button>
@@ -125,11 +125,11 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
                     </div>
 
                     <div className="hidden md:flex flex-col items-end gap-1 text-[11px]">
-                        <span className="px-2 py-0.5 rounded bg-blue-200 text-black">
+                        <span className="px-2 py-0.5 rounded bg-blue-200 dark:bg-blue-800 text-black dark:text-white">
                             {doc.isVisibleNonAuth ? "Public" : "Private*"}
                         </span>
                         {doc.trash && (
-                            <span className="px-2 py-0.5 rounded bg-red-600 text-white">
+                            <span className="px-2 py-0.5 rounded bg-red-600 dark:bg-red-700 text-white">
                                 Trashed
                             </span>
                         )}
@@ -140,11 +140,11 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
             {/* Media / preview */}
             {fileUrl && !compact && (
                 isVideo ? (
-                    <div className="h-48 overflow-hidden rounded flex justify-center bg-black">
+                    <div className="h-48 overflow-hidden rounded flex justify-center bg-black dark:bg-gray-950">
                         <video src={fileUrl} controls className="h-full w-full object-contain" />
                     </div>
                 ) : isGif || isImage ? (
-                    <div className="h-48 overflow-hidden rounded flex items-center justify-center bg-gray-900">
+                    <div className="h-48 overflow-hidden rounded flex items-center justify-center bg-gray-900 dark:bg-gray-950">
                         <Image
                             src={fileUrl}
                             alt={doc.name}
@@ -155,15 +155,15 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
                         />
                     </div>
                 ) : (
-                    <a href={fileUrl} target="_blank" rel="noreferrer" className="underline">
+                    <a href={fileUrl} target="_blank" rel="noreferrer" className="underline text-blue-600 dark:text-blue-400">
                         Download
                     </a>
                 )
             )}
 
             {!fileUrl && doc.content && !compact && (
-                <div className={`relative h-40 rounded-2xl bg-amber-900 p-2 overflow-hidden ${isTrashed ? "opacity-60" : ""}`}>
-                    <p className="text-xs md:text-sm">
+                <div className={`relative h-40 rounded-2xl bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 p-2 overflow-hidden ${isTrashed ? "opacity-60" : ""}`}>
+                    <p className="text-xs md:text-sm text-gray-900 dark:text-gray-200">
                         {renderPlainText(doc.content)}
                     </p>
                 </div>
