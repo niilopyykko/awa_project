@@ -21,14 +21,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const initialTheme = stored || systemPreference
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(initialTheme)
-    document.documentElement.classList.toggle('dark', initialTheme === 'dark')
   }, [])
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+    document.documentElement.style.colorScheme = theme
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
   const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light'
-    setTheme(newTheme)
-    localStorage.setItem('theme', newTheme)
-    document.documentElement.classList.toggle('dark', newTheme === 'dark')
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'))
   }
 
   return (

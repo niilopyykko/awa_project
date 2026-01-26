@@ -404,7 +404,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                     {!user ? (
                         <div className='flex flex-col bg-linear-to-br from-purple-400 to-pink-400 dark:from-purple-600 dark:to-pink-600 rounded-lg shadow-md text-center p-6'>
                             <p className="text-white text-xl sm:text-2xl font-semibold mb-4">Please login to access the editor</p>
-                            <Link href="/login" className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-purple-600 dark:text-purple-400 font-medium py-2 px-6 rounded-lg shadow transition-colors">Log in</Link>
+                            <Link href="/login" className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-text-purple font-medium py-2 px-6 rounded-lg shadow transition-colors">Log in</Link>
                         </div>
                     ) : (<div className='flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-md'>
                         <div className='bg-linear-to-r from-purple-500 to-pink-500 dark:from-purple-700 dark:to-pink-700 text-center p-4'>
@@ -412,26 +412,26 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                             <p className="text-purple-100 text-sm">Create and collaborate on documents</p>
                         </div>
                         <div className='bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 p-3 text-sm'>
-                            <div className='flex flex-wrap gap-3 items-center text-gray-700 dark:text-gray-300'>
-                                <span className='font-medium'>Shortcuts:</span>
-                                <span><span className='font-semibold text-purple-600 dark:text-purple-400'>Ctrl+B</span> Bold</span>
-                                <span><span className='font-semibold text-purple-600 dark:text-purple-400'>Ctrl+I</span> Italic</span>
-                                <span><span className='font-semibold text-purple-600 dark:text-purple-400'>Ctrl+U</span> Underline</span>
-                                <Link href="/shortcuts" className='text-purple-600 dark:text-purple-400 hover:underline font-medium'>View all</Link>
+                            <div className='flex flex-wrap gap-3 items-center text-text-muted'>
+                                <span className='font-medium text-text-muted'>Shortcuts:</span>
+                                <span><span className='font-semibold text-text-purple'>Ctrl+B</span> Bold</span>
+                                <span><span className='font-semibold text-text-purple'>Ctrl+I</span> Italic</span>
+                                <span><span className='font-semibold text-text-purple'>Ctrl+U</span> Underline</span>
+                                <Link href="/shortcuts" className='text-text-purple hover:underline font-medium'>View all</Link>
                             </div>
                         </div>
                         <div className='p-4 sm:p-6'>
 
                             <form onSubmit={handleSubmit} className='space-y-4'>
                                 <div className="mb-6">
-                                    <label htmlFor="title" className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>Document Name</label>
+                                    <label htmlFor="title" className='block text-base font-medium text-text mb-1 text-text-muted'>Document Name</label>
                                     <input
                                         type="text"
                                         id="title"
                                         placeholder={docName || "Document name"}
                                         value={docName}
                                         onChange={(e) => setDocName(e.target.value)}
-                                        className="border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-1 rounded-md w-full focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent transition-shadow"
+                                        className="border border-border bg-bg-input text-text p-1 rounded-md w-full focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent transition-shadow"
                                     />
                                 </div>
                                 <Tiptap content={content} onChange={(html: HTMLContent) => setContent(html)}  />
@@ -439,7 +439,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                                     <div >
                                         <label
                                             htmlFor="viewers"
-                                            className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            className="block mb-1 text-base font-medium text-text-muted">
                                             Viewers
                                         </label>
                                         <input
@@ -447,14 +447,14 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                                             id="viewers"
                                             name="viewers"
                                             placeholder={viewer || "WIP, does not do anything"}
-                                            className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 text-sm rounded-md focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent block w-full px-3 py-2 transition-shadow"
+                                            className="bg-[color:var(--bg-input)] border border-[color:var(--border)] text-text-muted text-sm rounded-md focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent block w-full px-3 py-2 transition-shadow"
                                             value={viewer}
                                             onChange={(e) => setViewer(e.target.value)} />
                                     </div>
                                     <div>
                                         <label
                                             htmlFor="commenter"
-                                            className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            className="block mb-1 text-base font-medium text-text-muted">
                                             Commenter
                                         </label>
                                         <input
@@ -462,14 +462,14 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                                             id="commenter"
                                             name="commenter"
                                             placeholder={commenter || "WIP, does not do anything"}
-                                            className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 text-sm rounded-md focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent block w-full px-3 py-2 transition-shadow"
+                                            className="bg-[color:var(--bg-input)] border border-[color:var(--border)] text-[color:var(--text)] text-sm rounded-md focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent block w-full px-3 py-2 transition-shadow"
                                             value={commenter}
                                             onChange={(e) => setCommenter(e.target.value)} />
                                     </div>
                                     <div>
                                         <label
                                             htmlFor="editors"
-                                            className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            className="block mb-1 text-base font-medium text-[color:var(--text-muted)]">
                                             Editors (comma seperated)
                                         </label>
                                         <input
@@ -477,7 +477,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                                             id="editors"
                                             name="editors"
                                             placeholder={editors || "John1, John2, John3..."}
-                                            className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 text-sm rounded-md focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent block w-full px-3 py-2 transition-shadow"
+                                            className="bg-[color:var(--bg-input)] border border-[color:var(--border)] text-[color:var(--text)] text-sm rounded-md focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent block w-full px-3 py-2 transition-shadow"
                                             value={editors}
                                             onChange={(e) => setEditors(e.target.value)} />
                                     </div>
@@ -492,7 +492,7 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                                         checked={isPublic}
                                         onChange={(e) => setIsPublic(e.target.checked)}
                                     />
-                                    <label htmlFor="isPublic" className="text-sm font-medium text-gray-900 dark:text-gray-200">Make document public</label>
+                                    <label htmlFor="isPublic"  className="text-md font-semibold tracking-wide text-text drop-shadow-sm drop-shadow-white">Make document public</label>
                                 </div>
                                 <div className='flex items-center gap-3'>
                                     <button 
@@ -503,14 +503,14 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                                         Save Document
                                     </button>
                                     {draftSaved && (
-                                        <span className='text-xs text-green-600 dark:text-green-400 font-medium'>✓ Draft saved</span>
+                                        <span className='text-sm text-[color:var(--text-green)] font-medium'>✓ Draft saved</span>
                                     )}
                                 </div>
                             </form>
                             {isLocked && (
                                 <div className='mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-600 rounded'>
-                                    <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
-                                        🔒 {lockOwner} is currently editing this document
+                                    <p className="text-sm text-[color:var(--text-yellow)] font-medium">
+                                        {lockOwner} is currently editing this document
                                     </p>
                                 </div>
                             )}

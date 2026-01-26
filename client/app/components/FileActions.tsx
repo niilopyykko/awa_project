@@ -351,7 +351,7 @@ export default function FileActions({ fileId, fileName, isTrashed = false, fileO
                 ) : (
                     <>
                         <DropdownItem key="restore" className="cursor-pointer m-1 px-1 text-center size-auto bg-green-300 rounded-md text-black" onClick={handleRestore}>Restore</DropdownItem>
-                        <DropdownItem key="delete" className="text-danger cursor-pointer m-1 px-1 text-center size-auto bg-red-300 rounded-md text-red-950" color="danger" onClick={handleDeletePermanent}>Delete Permanently</DropdownItem>
+                        <DropdownItem key="delete" className="text-danger cursor-pointer m-1 px-1 text-center size-auto bg-red-300 rounded-md text-[color:var(--text-red)]" color="danger" onClick={handleDeletePermanent}>Delete Permanently</DropdownItem>
                     </>
                 )}
             </DropdownMenu>

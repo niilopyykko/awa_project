@@ -63,51 +63,51 @@ export default function Register() {
     <div className="w-full min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center">
       <form
         onSubmit={(e) => { e.preventDefault(); submitRegister(); }}
-        className="bg-amber-50 flex flex-col items-center max-w-md m-0 p-4 space-y-3 rounded-md"
+        className="bg-[color:var(--bg-toolbar)] border-2 border-[color:var(--border)] flex flex-col items-center max-w-md m-0 p-6 space-y-4 rounded-lg shadow-lg"
       >
         <input
           onChange={e => setUsername(e.target.value)}
           type="username"
           placeholder="username"
-          className="border-red-600 border-2 m-2 text-black md:text-3xl text-2xl rounded-md"
+          className="border-2 border-purple-500 dark:border-purple-600 bg-[color:var(--bg-input)] text-[color:var(--text)] md:text-3xl text-2xl rounded-md px-3 py-2 w-full"
           required
         />
-        <li className="text-black">Username <span className="font-bold">MUST</span> be at least 3 characters long </li>
+        <li className="text-[color:var(--text)]">Username <span className="font-bold">MUST</span> be at least 3 characters long </li>
         <input
           onChange={e => setPassword(e.target.value)}
           type="password"
           placeholder="password"
-          className="border-red-600 border-2 m-2 text-black md:text-3xl text-2xl rounded-md"
+          className="border-2 border-purple-500 dark:border-purple-600 bg-[color:var(--bg-input)] text-[color:var(--text)] md:text-3xl text-2xl rounded-md px-3 py-2 w-full"
           required
         />
-        <ul className="text-black list-disc">
+        <ul className="text-[color:var(--text)] list-disc">
           <li>Password <span className="font-bold">MUST</span> be at least 5 characters long </li>
           <li>Password <span className="font-bold">MUST</span> contain a number </li>
         </ul>
-        <label className="text-black pt-2 pb-0 mb-0 text-sm w-fit text-center">
+        <label className="text-[color:var(--text)] pt-2 pb-0 mb-0 text-sm w-fit text-center">
           Profile picture (optional)
         </label>
         <input
           type="file"
           accept="image/*"
           onChange={(e) => { if (e.target.files && e.target.files[0]) setProfileFile(e.target.files[0]) }}
-          className="bg-fuchsia-300 rounded-md text-black min-w-2xs max-w-lg"
+          className="bg-[color:var(--bg-input)] border-2 border-[color:var(--border)] rounded-md text-[color:var(--text)] p-2 w-full"
         />
         <button
           type="submit"
-          className="bg-red-800 text-yellow-600 m-2 border-2 text-2xl px-2 rounded-md hover:bg-amber-600 hover:text-black active:bg-red-600"
+          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-700 dark:to-pink-700 dark:hover:from-purple-800 dark:hover:to-pink-800 text-white font-bold py-3 px-8 text-xl rounded-lg shadow-lg hover:shadow-xl transition-all w-full"
         >
           Register
         </button>
       </form>
 
       {typeof userPrompt === "string" && userPrompt && (
-        <p className="max-w-md mx-auto border-2 border-blue-200 p-2 m-4 text-center rounded bg-white text-black">
+        <p className="max-w-md mx-auto border-2 border-blue-400 dark:border-blue-600 p-3 m-4 text-center rounded-lg bg-blue-50 dark:bg-blue-900/20 text-[color:var(--text)] shadow-md">
           {userPrompt}
         </p>
       )}
       {Array.isArray(userPrompt) && (
-        <ul className="max-w-md mx-auto border-2 border-blue-200 p-2 m-4 rounded bg-white text-black list-disc">
+        <ul className="max-w-md mx-auto border-2 border-blue-400 dark:border-blue-600 p-3 m-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-[color:var(--text)] list-disc shadow-md">
           {userPrompt.map((msg, i) => (
             <li key={i}>{msg}</li>
           ))}

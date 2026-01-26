@@ -90,7 +90,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
                 <div className="flex-1 min-w-0 rounded-md shadow-2xl bg-amber-700 dark:bg-amber-950 p-2">
                     <h3 className="font-bold truncate text-sm md:text-lg text-white">{doc.name}</h3>
 
-                    <div className={`mt-1 text-xs text-gray-200 dark:text-gray-300 ${compact ? "flex gap-2" : "flex flex-col gap-1"}`}>
+                    <div className={`mt-1 text-sm text-[color:var(--text-muted)] ${compact ? "flex gap-2" : "flex flex-col gap-1"}`}>
                         <span className="hidden md:block truncate">
                             Uploaded by <b>{doc.owner.username}</b>
                         </span>
@@ -108,7 +108,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
                         {!isTrashed && !isImage && !isVideo && user && (
                             <button
                                 onClick={openEditor}
-                                className="px-2 py-1 text-xs rounded-md bg-blue-500 hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                                className="px-3 py-1.5 text-sm rounded-md bg-blue-500 hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                             >
                                 Edit
                             </button>
@@ -124,12 +124,12 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
                         />
                     </div>
 
-                    <div className="hidden md:flex flex-col items-end gap-1 text-[11px]">
-                        <span className="px-2 py-0.5 rounded bg-blue-200 dark:bg-blue-800 text-black dark:text-white">
+                    <div className="hidden md:flex flex-col items-end gap-1 text-sm">
+                        <span className="px-3 py-1 rounded font-medium bg-blue-200 dark:bg-blue-800 text-[color:var(--text)]">
                             {doc.isVisibleNonAuth ? "Public" : "Private*"}
                         </span>
                         {doc.trash && (
-                            <span className="px-2 py-0.5 rounded bg-red-600 dark:bg-red-700 text-white">
+                            <span className="px-3 py-1 rounded font-medium bg-red-600 dark:bg-red-700 text-white">
                                 Trashed
                             </span>
                         )}
@@ -155,7 +155,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
                         />
                     </div>
                 ) : (
-                    <a href={fileUrl} target="_blank" rel="noreferrer" className="underline text-blue-600 dark:text-blue-400">
+                    <a href={fileUrl} target="_blank" rel="noreferrer" className="underline text-[color:var(--text-blue)]">
                         Download
                     </a>
                 )
@@ -163,7 +163,7 @@ export default function DocumentCard({ doc, currentUser, onUpdated, compact }: P
 
             {!fileUrl && doc.content && !compact && (
                 <div className={`relative h-40 rounded-2xl bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 p-2 overflow-hidden ${isTrashed ? "opacity-60" : ""}`}>
-                    <p className="text-xs md:text-sm text-gray-900 dark:text-gray-200">
+                    <p className="text-sm md:text-base text-[color:var(--text)]">
                         {renderPlainText(doc.content)}
                     </p>
                 </div>

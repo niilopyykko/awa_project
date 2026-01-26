@@ -2,26 +2,56 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #041833;
+  --foreground: #111827;
+  --text: #090f1b;
+  --text-muted: #6b7280;
+  --text-purple: #9333ea;
+  --text-blue: #2563eb;
+  --text-green: #16a34a;
+  --text-yellow: #a16207;
+  --text-red: #991b1b;
+  --bg-input: #ffffff;
+  --bg-toolbar: #f3f4f6;
+  --border: #d1d5db;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-purple: var(--text-purple);
+  --color-text-blue: var(--text-blue);
+  --color-text-green: var(--text-green);
+  --color-text-yellow: var(--text-yellow);
+  --color-text-red: var(--text-red);
+  --color-bg-input: var(--bg-input);
+  --color-bg-toolbar: var(--bg-toolbar);
+  --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #031130;
-    --foreground: #ededed;
 
-  }
+.dark {
+  --background: #111827;
+  --foreground: #f3f4f6;
+  --text: #f3f4f6;
+  --text-muted: #9ca3af;
+  --text-purple: #c084fc;
+  --text-blue: #93c5fd;
+  --text-green: #86efac;
+  --text-yellow: #fef08a;
+  --text-red: #fca5a5;
+  --bg-input: #374151;
+  --bg-toolbar: #1f2937;
+  --border: #4b5563;
 }
 
+html,
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: sans-serif, Arial, Roboto, 'Segoe UI';
+  transition: background-color 0.3s ease, color 0.3s ease;
 }

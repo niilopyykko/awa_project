@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css"
 import Navbar from "./components/Navbar";
-import { AuthProvider } from "./context/AuthContext";
-import { ThemeProvider } from "./context/ThemeContext";
 import { cookies } from "next/headers";
+import { Providers } from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,21 +39,19 @@ export default async function RootLayout({
     serverUser = null
   }
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width,initial-scale=1" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen w-full overflow-x-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen w-full overflow-x-hidden bg-[color:var(--background)] text-[color:var(--text)]`}
       >
-        <ThemeProvider>
-          <AuthProvider serverToken={serverToken} serverUser={serverUser}>
-            <Navbar />
+        <Providers serverToken={serverToken} serverUser={serverUser}>
+          <Navbar />
           <main style={{ paddingTop: '4rem', minHeight: 'calc(100vh - 4rem)' }}>
             {children}
           </main>
-        </AuthProvider>
-        </ThemeProvider>
+        </Providers>
       </body>
     </html >
   );

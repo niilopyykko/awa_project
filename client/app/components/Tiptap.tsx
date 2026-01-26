@@ -27,5 +27,5 @@ export default function Tiptap({ content, onChange }: Props) {
     }, [content, editor])
 
     return (
-        <EditorContent editor={editor} className='m-0 p-0 text-blue-950 drop-shadow-md shadow-blue-950 shadow bg-blue-100' />)
+        <EditorContent editor={editor} className='m-0 p-2 text-[color:var(--text)] bg-[color:var(--bg-input)] border-2 border-[color:var(--border)] rounded-md min-h-[100px]' />)
 }

@@ -35,37 +35,37 @@ export default function ShortcutsPage() {
         <div className="p-8 bg-white">
             <div className="max-w-4xl mx-auto">
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Keyboard Shortcuts</h1>
-                    <p className="text-gray-600">Quick reference for editor commands</p>
+                    <h1 className="text-3xl font-bold text-[color:var(--text)] mb-2">Keyboard Shortcuts</h1>
+                    <p className="text-[color:var(--text-muted)]">Quick reference for editor commands</p>
                 </div>
 
                 <div className="space-y-6">
                     {shortcuts.map((section) => (
                         <div key={section.category} className="border border-gray-200 rounded">
                             <div className="bg-gray-100 px-6 py-3">
-                                <h2 className="text-lg font-semibold text-gray-900">{section.category}</h2>
+                                <h2 className="text-lg font-semibold text-[color:var(--text)]">{section.category}</h2>
                             </div>
 
                             <div className="overflow-x-auto">
                                 <table className="w-full">
                                     <thead className="bg-gray-50 border-b border-gray-200">
                                         <tr>
-                                            <th className="px-6 py-2 text-left text-sm font-semibold text-gray-700">Command</th>
-                                            <th className="px-6 py-2 text-left text-sm font-semibold text-gray-700">Windows/Linux</th>
-                                            <th className="px-6 py-2 text-left text-sm font-semibold text-gray-700">macOS</th>
+                                            <th className="px-6 py-2 text-left text-sm font-semibold text-[color:var(--text)]">Command</th>
+                                            <th className="px-6 py-2 text-left text-sm font-semibold text-[color:var(--text)]">Windows/Linux</th>
+                                            <th className="px-6 py-2 text-left text-sm font-semibold text-[color:var(--text)]">macOS</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
                                         {section.items.map((item, idx) => (
                                             <tr key={idx} className="hover:bg-gray-50">
-                                                <td className="px-6 py-2 text-sm text-gray-900">{item.command}</td>
+                                                <td className="px-6 py-2 text-sm text-[color:var(--text)]">{item.command}</td>
                                                 <td className="px-6 py-2 text-sm">
                                                     <code className="bg-gray-100 px-2 py-1 rounded text-gray-700 font-mono text-xs">
                                                         {item.windows}
                                                     </code>
                                                 </td>
                                                 <td className="px-6 py-2 text-sm">
-                                                    <code className="bg-gray-100 px-2 py-1 rounded text-gray-700 font-mono text-xs">
+                                                    <code className="bg-gray-100 px-2 py-1 rounded text-[color:var(--text-muted)] font-mono text-sm">
                                                         {item.mac}
                                                     </code>
                                                 </td>

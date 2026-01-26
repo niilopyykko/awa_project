@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRef } from 'react'
-import { IoMoon, IoSunny } from 'react-icons/io5'
+import ThemeToggle from './ThemeToggle'
 
 export default function Navbar() {
     const { token, user, avatarUrl, logout } = useAuth()
-    const { theme, toggleTheme } = useTheme()
     const [profilePic, setProfilePic] = useState<string>(avatarUrl ?? '/vercel.svg')
     const objectUrlRef = useRef<string | null>(null)
     const [menuOpen, setMenuOpen] = useState(false)
@@ -85,13 +83,7 @@ export default function Navbar() {
 
                 {/* Right side auth (desktop) */}
                 <div className="ml-auto hidden md:flex gap-4 items-center">
-                    <button
-                        onClick={toggleTheme}
-                        className="bg-blue-500 dark:bg-blue-800 p-2 rounded hover:bg-blue-700 dark:hover:bg-blue-700 active:bg-blue-800 transition-colors"
-                        aria-label="Toggle theme"
-                    >
-                        {theme === 'dark' ? <IoSunny size={20} /> : <IoMoon size={20} />}
-                    </button>
+                    <ThemeToggle />
                     {!user && <Link href="/login" className='bg-blue-500 dark:bg-blue-800 p-2 rounded hover:bg-blue-700 dark:hover:bg-blue-700 active:bg-blue-800 transition-colors'>Log in</Link>}
                     {!user && <Link href="/register" className='bg-blue-500 dark:bg-blue-800 p-2 rounded hover:bg-blue-700 dark:hover:bg-blue-700 active:bg-blue-800 transition-colors'>Register</Link>}
 
@@ -132,12 +124,7 @@ export default function Navbar() {
             {/* Mobile menu: shown below nav on small screens */}
             {menuOpen && (
                 <div className="md:hidden mt-2 p-4 flex flex-col gap-4 bg-blue-600 dark:bg-blue-900 text-white shadow-lg">
-                    <button
-                        onClick={() => { toggleTheme(); setMenuOpen(false); }}
-                        className="flex items-center gap-2 bg-blue-500 dark:bg-blue-800 px-3 py-2 rounded hover:bg-blue-700 transition-colors"
-                    >
-                        {theme === 'dark' ? <><IoSunny size={20} /> Light Mode</> : <><IoMoon size={20} /> Dark Mode</>}
-                    </button>
+                    <ThemeToggle showLabel onToggle={() => setMenuOpen(false)} variant="ghost" />
                     <Link href="/editor" onClick={() => { try { sessionStorage.removeItem('editorContent'); sessionStorage.removeItem('editorName'); sessionStorage.removeItem('editorId'); sessionStorage.removeItem('editorEditors'); sessionStorage.removeItem('editorCommenter'); sessionStorage.removeItem('editorViewer'); sessionStorage.removeItem('editorIsPublic'); } catch { } setMenuOpen(false); }}>
                         New Text Document
                     </Link>

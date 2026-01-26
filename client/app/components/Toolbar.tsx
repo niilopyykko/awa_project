@@ -24,7 +24,7 @@ interface Props {
 export default function Toolbar({ sortKey, setSortKey, sortOrder, setSortOrder, gridView, toggleGrid, showTrash, setShowTrash, trashCount, onSearch, page, setPage, totalPages }: Props) {
     const [query, setQuery] = React.useState("");
     return (
-        <div id="viewToggle" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 lg:p-6 text-xl sm:text-2xl">
+        <div id="viewToggle" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 lg:p-6 text-xl sm:text-2xl bg-[color:var(--bg-toolbar)] rounded-lg">
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
 
                 <div className="relative flex items-center">
@@ -36,7 +36,7 @@ export default function Toolbar({ sortKey, setSortKey, sortOrder, setSortOrder, 
                             onSearch?.(val);
                         }}
                         placeholder="Search documents..."
-                        className="text-sm sm:text-base px-3 h-10 sm:h-9 rounded-2xl bg-white dark:bg-gray-700 text-black dark:text-white border border-gray-300 dark:border-gray-600 w-48 sm:w-64"
+                        className="text-sm sm:text-base px-3 h-10 sm:h-9 rounded-2xl bg-[color:var(--bg-input)] text-[color:var(--text)] border border-[color:var(--border)] w-48 sm:w-64"
                     />
                     {query && (
                         <button
@@ -45,7 +45,7 @@ export default function Toolbar({ sortKey, setSortKey, sortOrder, setSortOrder, 
                                 onSearch?.("");
                             }}
                             aria-label="Clear search"
-                            className="absolute right-1 top-1/2 -translate-y-1/2 text-2xl text-gray-600 dark:text-gray-400 px-2"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 text-2xl text-[color:var(--text-muted)] px-2"
                         >
                             <IoBackspace />
                         </button>
@@ -58,15 +58,15 @@ export default function Toolbar({ sortKey, setSortKey, sortOrder, setSortOrder, 
                         <button
                             onClick={() => setPage(Math.max(1, (page || 1) - 1))}
                             disabled={(page || 1) <= 1}
-                            className="px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-black dark:text-white disabled:opacity-50"
+                            className="px-2 py-1 rounded bg-[color:var(--bg-input)] text-[color:var(--text)] disabled:opacity-50"
                         >
                             <IoChevronBack></IoChevronBack>
                         </button>
-                        <span className="text-sm text-gray-900 dark:text-gray-100">{page}/{totalPages ?? 1}</span>
+                        <span className="text-sm text-[color:var(--text)]">{page}/{totalPages ?? 1}</span>
                         <button
                             onClick={() => setPage(Math.min(totalPages ?? 1, (page || 1) + 1))}
                             disabled={(page || 1) >= (totalPages ?? 1)}
-                            className="px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-black dark:text-white disabled:opacity-50"
+                            className="px-2 py-1 rounded bg-[color:var(--bg-input)] text-[color:var(--text)] disabled:opacity-50"
                         >
                             <IoChevronForward></IoChevronForward>
 
@@ -74,16 +74,16 @@ export default function Toolbar({ sortKey, setSortKey, sortOrder, setSortOrder, 
                     </div>
                 )}
 
-                <label className="text-sm sm:text-base text-gray-900 dark:text-gray-100">Sort:</label>
+                <label className="text-sm sm:text-base text-[color:var(--text)]">Sort:</label>
                 <select value={sortKey} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortKey(e.target.value as 'name' | 'created' | 'modified')} className="text-sm sm:text-base p-2 rounded-2xl bg-purple-500 dark:bg-purple-700 text-white">
                     <option value="name">Name</option>
                     <option value="created">Created</option>
                     <option value="modified">Modified</option>
                 </select>
-                <button onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')} className="px-2 text-gray-900 dark:text-gray-100">{sortOrder === 'asc' ? <FaSortUp /> : <FaSortDown />}</button>
+                <button onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')} className="px-2 text-[color:var(--text)]">{sortOrder === 'asc' ? <FaSortUp /> : <FaSortDown />}</button>
             </div>
             <div className="flex items-center gap-2">
-                <button onClick={toggleGrid} className="text-gray-900 dark:text-gray-100">
+                <button onClick={toggleGrid} className="text-[color:var(--text)]">
                     {gridView ? (<IoList />) : (<IoGrid />)}
                 </button>
             </div>
