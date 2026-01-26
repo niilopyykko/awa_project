@@ -371,12 +371,17 @@ router.get("/documents/:id/pdf", async (req: Request, res: Response) => {
 // ------------------------
 router.get("/uploads/:id", async (req: Request, res: Response) => {
   try {
-    const docId = String(req.params.id);
-    let doc = await UserDocument.findById(docId).populate("owner", "username").populate("editors", "username");
-    if (!doc) doc = await UserDocument.findOne({ shareToken: docId }).populate("owner", "username").populate("editors", "username");
+    const docId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
-    const uploadsDir = process.env.UPLOAD_DIR || "/uploads";
-    const filePath = doc?.filepath ? path.join(uploadsDir, doc.filepath) : path.join(uploadsDir, docId);
+    let doc = await UserDocument.findById(docId).populate("owner", "username").populate("editors", "username");
+    if (!doc) {
+      doc = await UserDocument.findOne({ shareToken: docId }).populate("owner", "username").populate("editors", "username");
+    }
+    if (!doc) return res.status(404).send("Document not found");
+
+    const uploadsDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
+    const filePath = path.join(uploadsDir, doc.filepath || docId);
+
     if (!fs.existsSync(filePath)) return res.status(404).send("File not found");
 
     return res.sendFile(filePath);
@@ -385,5 +390,6 @@ router.get("/uploads/:id", async (req: Request, res: Response) => {
     return res.status(500).send("Server error");
   }
 });
+
 
 export default router;
