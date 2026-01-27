@@ -44,7 +44,7 @@ export default async function RootLayout({
         <meta name="viewport" content="width=device-width,initial-scale=1" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen w-full overflow-x-hidden bg-[color:var(--background)] text-[color:var(--text)]`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen w-full overflow-x-hidden bg-background text-text`}
       >
         <Providers serverToken={serverToken} serverUser={serverUser}>
           <Navbar />

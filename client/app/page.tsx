@@ -6,7 +6,7 @@ import DocumentList from "./components/DocumentList";
 import DocumentGrid from "./components/DocumentGrid";
 import useDocuments from "./hooks/useDocuments";
 import { IDocument } from "@/src/types";
-import { IoFolder, IoTrash  } from "react-icons/io5";
+import { IoFolder, IoTrash } from "react-icons/io5";
 
 
 
@@ -113,7 +113,8 @@ export default function Home() {
     if (windowWidth >= 1280) return 8; // xl: 4 cols × 2 rows
     if (windowWidth >= 1024) return 6; // lg: 3 cols × 2 rows
     if (windowWidth >= 640) return 4;  // sm: 2 cols × 2 rows
-    return 2; // mobile: 1 col × 2 rows
+    if (windowWidth >= 480) return 1;  // 1/4 screen: 1 col × 1 row
+    return 5; // mobile: 1 col × 5 row
   };
   const pageSize = getPageSize();
   const totalPages = Math.max(1, Math.ceil(visibleDocuments.length / pageSize));
@@ -130,13 +131,13 @@ export default function Home() {
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <button
           onClick={() => setShowTrash(s => !s)}
           disabled={!effectiveShowTrash && trashCount === 0}
           className={`px-4 py-2 sm:px-6 sm:py-2.5 sm:ml-8 text-center rounded-full text-sm sm:text-base font-bold shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${effectiveShowTrash
-              ? 'bg-linear-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 text-white hover:from-red-700 hover:to-red-800 dark:hover:from-red-800 dark:hover:to-red-900'
-              : 'bg-linear-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 text-white hover:from-green-600 hover:to-green-700 dark:hover:from-green-700 dark:hover:to-green-800'
+            ? 'bg-linear-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 text-white hover:from-red-700 hover:to-red-800 dark:hover:from-red-800 dark:hover:to-red-900'
+            : 'bg-linear-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 text-white hover:from-green-600 hover:to-green-700 dark:hover:from-green-700 dark:hover:to-green-800'
             }`}
         >
           {effectiveShowTrash ? (
@@ -172,7 +173,7 @@ export default function Home() {
         <div className="flex items-center justify-center min-h-[40vh] p-6 sm:p-8">
           <div className="w-full max-w-md">
             <p className="text-center p-4 text-xl sm:text-2xl rounded-t-2xl bg-purple-500 dark:bg-purple-700 text-white">Drive is empty</p>
-            <p className="text-center p-4 text-sm sm:text-md rounded-b-2xl bg-purple-200 dark:bg-purple-900 text-[color:var(--text)]">OR DATABASE IS OFFLINE?</p>
+            <p className="text-center p-4 text-sm sm:text-md rounded-b-2xl bg-purple-200 dark:bg-purple-900 text-text">OR DATABASE IS OFFLINE?</p>
           </div>
         </div>
       ) : (

@@ -11,10 +11,10 @@ const ORIGIN = API.replace(/\/api$/, '')
 
 type StatusInfo = { label: string; colorClass: string };
 function computeStatus({ isPublic, hasShareLink, hasEditorsAssigned }: { isPublic?: boolean; hasShareLink?: boolean; hasEditorsAssigned?: boolean; }): StatusInfo {
-    if (isPublic) return { label: 'Public', colorClass: 'bg-red-500 text-text' };
-    if (hasShareLink) return { label: 'Link only', colorClass: 'bg-text-green text-text' };
-    if (hasEditorsAssigned) return { label: 'Shared', colorClass: 'bg-text-purple text-text' };
-    return { label: 'Private', colorClass: 'bg-text-muted text-text' };
+    if (isPublic) return { label: 'Public', colorClass: 'bg-red-500 text-text text-shadow-lg' };
+    if (hasShareLink) return { label: 'Link', colorClass: 'bg-green-600 text-text text-shadow-lg' };
+    if (hasEditorsAssigned) return { label: 'Shared', colorClass: 'bg-text-purple text-text text-shadow-lg' };
+    return { label: 'Private', colorClass: 'bg-text-muted text-text text-shadow-lg' };
 }
 
 interface Props {

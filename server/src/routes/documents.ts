@@ -191,7 +191,7 @@ router.post("/documents/:id/renewLock", validateToken, async (req: CustomRequest
 // ------------------------
 router.post("/documents/:id/generate-share-link", validateToken, async (req: CustomRequest, res: Response) => {
   try {
-    const docId = req.params.id[0];
+    const docId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const userId = req.user!.id;
 
     if (!Types.ObjectId.isValid(docId)) {
@@ -341,7 +341,7 @@ router.post("/documents/:id/share", validateToken, async (req: CustomRequest, re
 // ------------------------
 router.post("/documents/:id/revoke-share-link", validateToken, async (req: CustomRequest, res: Response) => {
   try {
-    const docId = req.params.id[0];
+    const docId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const userId = req.user!.id;
 
     if (!Types.ObjectId.isValid(docId)) {
