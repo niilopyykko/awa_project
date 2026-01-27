@@ -117,7 +117,8 @@ router.post(
 // ------------------------
 router.patch("/documents/:id", validateToken, async (req: CustomRequest, res: Response) => {
   try {
-    const docId = req.params.id[0]
+    const docId = req.params.id
+
     const userId = req.user!.id;
     const { name, makePublic, addEditor, removeEditor } = req.body;
 
@@ -150,7 +151,7 @@ router.patch("/documents/:id", validateToken, async (req: CustomRequest, res: Re
 // ------------------------
 router.post("/documents/:id/lock", validateToken, async (req: CustomRequest, res: Response) => {
   try {
-    const docId = req.params.id[0];
+    const docId = req.params.id;
     const userId = req.user!.id;
     const now = new Date();
 
@@ -230,7 +231,7 @@ router.post("/documents/:id/generate-share-link", validateToken, async (req: Cus
 
 router.post("/documents/:id/rename", validateToken, async (req: CustomRequest, res: Response) => {
   try {
-    const docId = req.params.id[0]
+    const docId = req.params.id
     const userId = req.user!.id;
     const { name } = req.body || {};
 
@@ -262,7 +263,7 @@ router.post("/documents/:id/rename", validateToken, async (req: CustomRequest, r
 // ------------------------
 router.post("/documents/:id/share", validateToken, async (req: CustomRequest, res: Response) => {
   try {
-    const docId = req.params.id[0]
+    const docId = req.params.id
     const userId = req.user!.id;
     const { collaborator, remove, removeUsername } = req.body || {};
 
@@ -379,7 +380,7 @@ router.post("/documents/:id/revoke-share-link", validateToken, async (req: Custo
 // ------------------------
 router.post("/documents/:id/visibility", validateToken, async (req: CustomRequest, res: Response) => {
   try {
-    const docId = req.params.id[0]
+    const docId = req.params.id
     const userId = req.user!.id;
 
     const doc = await UserDocument.findById(docId);
@@ -496,7 +497,7 @@ router.delete("/documents/:id", validateToken, async (req: CustomRequest, res: R
 // ------------------------
 router.get("/documents/:id", async (req: Request, res: Response) => {
   try {
-    const id = req.params.id[0]
+    const id = req.params.id
     let userId: string | null = null;
 
     try {
@@ -579,7 +580,7 @@ router.get("/documents/:id/pdf", async (req: Request, res: Response) => {
 // ------------------------
 
 router.get("/uploads/:id", async (req: Request, res: Response) => {
-  const docId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id[0]
+  const docId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
   if (!docId) return res.status(400).send("Missing file ID");
 
   const isObjectId = Types.ObjectId.isValid(docId) && docId.length === 24;
