@@ -3,10 +3,21 @@
 import { ThemeProvider } from 'next-themes'
 import { AuthProvider } from './context/AuthContext'
 
-export function Providers({ children, serverToken, serverUser }: { children: React.ReactNode; serverToken: string | null; serverUser: string | null }) {
+export function Providers({
+  children,
+  serverUser,
+  serverAvatarUrl,
+}: {
+  children: React.ReactNode
+  serverUser: string | null
+  serverAvatarUrl: string | null
+}) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AuthProvider serverToken={serverToken} serverUser={serverUser}>
+      <AuthProvider
+        serverUser={serverUser}
+        serverAvatarUrl={serverAvatarUrl}
+      >
         {children}
       </AuthProvider>
     </ThemeProvider>

@@ -7,6 +7,7 @@ import path from 'path'
 import fs from 'fs'
 import upload from '../middleware/multer-config'
 import { CustomRequest, validateToken } from '../middleware/validateToken'
+import { uploadsDir } from '../../server'
 
 const router: Router = Router()
 
@@ -93,8 +94,6 @@ router.get('/me/avatar', validateToken, async (req: CustomRequest, res: Response
     let profilePicPath = user.profilePic
     console.log('[avatar] Initial path:', profilePicPath)
 
-    const uploadsDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')
-
     // If it's not absolute, resolve against uploadsDir and basename to avoid stray paths
     if (!path.isAbsolute(profilePicPath)) {
       profilePicPath = path.join(uploadsDir, path.basename(profilePicPath))
@@ -112,6 +111,7 @@ router.get('/me/avatar', validateToken, async (req: CustomRequest, res: Response
     }
 
     console.log('[avatar] Serving file successfully')
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
     res.sendFile(profilePicPath)
   } catch (err) {
     console.error('Avatar error:', err)
@@ -158,5 +158,30 @@ router.post(
     }
   }
 )
+
+// Get current user info
+router.get("/me", validateToken, async (req: CustomRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const user = await User.findById(userId).select("username email _id profilePic");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      id: user._id,
+      username: user.username,
+      profilePic: user.profilePic ?? null
+    });
+  } catch (err) {
+    console.error("Error in /user/me:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 export default router
