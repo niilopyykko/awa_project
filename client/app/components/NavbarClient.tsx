@@ -5,7 +5,6 @@ import Link from "next/link"
 import Image from "next/image"
 import { IoMenu } from "react-icons/io5"
 import ThemeToggle from "./ThemeToggle"
-import { fetchUserAvatar } from "./fetchUserAvatar"
 type Props = {
     user: string | null
     avatarUrl: string | null
@@ -20,9 +19,9 @@ export default function NavbarClient({ user, avatarUrl }: Props) {
     useEffect(() => {
         async function loadAvatar() {
             if (!avatarUrl && user) {
-                const fresh = await fetchUserAvatar()
-                if (fresh) { setProfilePic(`${fresh}?ts=${Date.now()}`) }
-            } else if (avatarUrl) { setProfilePic(`${avatarUrl}?ts=${Date.now()}`) }
+                const fresh = "/api/proxy/avatar"
+                if (fresh) { setProfilePic(`${fresh}`) }
+            } else if (avatarUrl) { setProfilePic(`${avatarUrl}`) }
         } loadAvatar()
     }, [avatarUrl, user])
 

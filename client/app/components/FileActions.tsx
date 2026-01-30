@@ -128,8 +128,8 @@ export default function FileActions({ userDocument, currentUsername }: FileActio
                                     const usePdf = !userDocument.filepath || (ext ? textExts.includes(ext) : false);
 
                                     const url = usePdf
-                                        ? `${BACKEND}/api/documents/${userDocument._id}/pdf`
-                                        : `${BACKEND}/api/uploads/${userDocument._id}?download=1`;
+                                        ? `/api/proxy/documents/${userDocument._id}/pdf`
+                                        : `/api/proxy/documents/${userDocument._id}?download=1`;
 
                                     const res = await fetch(url, { credentials: "include" });
                                     if (!res.ok) throw new Error("Download failed");

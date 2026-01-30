@@ -18,7 +18,7 @@ export default async function NavbarServer() {
     }
 
     const user = userData?.username ?? null
-    const avatarUrl = user ? `${backend}/user/me/avatar` : null
+    const avatarUrl = user ? "/api/proxy/avatar" : null
 
     return <NavbarClient user={user} avatarUrl={avatarUrl} />
 }
