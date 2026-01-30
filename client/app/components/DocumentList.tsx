@@ -53,8 +53,8 @@ export default function DocumentList({
                         key={doc._id}
                         doc={doc}
                         currentUser={currentUsername}
-                        createdAt={new Date(doc.createdAt).toLocaleString("fi-FI")}
-                        updatedAt={new Date(doc.updatedAt).toLocaleString("fi-FI")}
+                        createdAt={doc.createdAt.toLocaleString()}
+                        updatedAt={doc.updatedAt.toLocaleString()}
                         compact={true}
                     />
                 ))}

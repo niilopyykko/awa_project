@@ -45,6 +45,14 @@ export default async function HomePage({ searchParams }: Props) {
     } catch { }
   }
 
+
+  function formatDate(dateStr: string) {
+    return new Date(dateStr).toLocaleString("fi-FI", {
+      timeZone: "Europe/Helsinki",
+    });
+  }
+
+
   // Fetch documents
   const allDocuments = await fetchDocuments(token);
 
@@ -52,11 +60,17 @@ export default async function HomePage({ searchParams }: Props) {
   const filtered = await filterDocuments(allDocuments, query);
   const sorted = await sortDocuments(filtered, sortKey, sortOrder);
 
+  const formatted = sorted.map(doc => ({
+    ...doc,
+    createdAtFormatted: formatDate(doc.createdAt),
+    updatedAtFormatted: formatDate(doc.updatedAt),
+  }));
+
   // Pass all sorted documents to client for responsive pagination
   return (
     <HomeViewClient
       documents={[]} // Not used anymore
-      allDocuments={sorted}
+      allDocuments={formatted}
       currentUsername={currentUser}
       currentPage={page}
       totalPages={1} // Calculated client-side

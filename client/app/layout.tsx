@@ -28,7 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   let serverAvatarUrl: string | null = null;
 
   if (token) {
-    const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
+    const backend = process.env.BACKEND_URL;
 
     try {
       const res = await fetch(`${backend}/user/me`, {
