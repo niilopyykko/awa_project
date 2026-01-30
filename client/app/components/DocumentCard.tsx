@@ -1,6 +1,7 @@
 import Image from "next/image";
 import FileActions from "./FileActions";
 import { IDocument } from "../types";
+import { useEffect, useState } from "react";
 
 type StatusInfo = { label: string; colorClass: string };
 
@@ -30,6 +31,17 @@ interface Props {
 
 
 export default function DocumentCard({ doc, currentUser, createdAt, updatedAt, compact }: Props) {
+    // Local state for formatted dates
+    const [createdAtLocal, setCreatedAtLocal] = useState(createdAt);
+    const [updatedAtLocal, setUpdatedAtLocal] = useState(updatedAt);
+
+    useEffect(() => {
+        // Format using browser locale and timezone
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setCreatedAtLocal(new Date(createdAt).toLocaleString(navigator.language));
+        setUpdatedAtLocal(new Date(updatedAt).toLocaleString(navigator.language));
+    }, [createdAt, updatedAt]);
+
 
     const filename = doc.filepath || doc.name;
     const ext = filename.split(".").pop()?.toLowerCase() || "";
@@ -67,10 +79,10 @@ export default function DocumentCard({ doc, currentUser, createdAt, updatedAt, c
                             Uploaded by <b>{doc.owner?.username ?? "Unknown"}</b>
                         </span>
                         <span className="hidden lg:block truncate">
-                            Created @ {createdAt}
+                            Created @ {createdAtLocal}
                         </span>
                         <span className="hidden md:block truncate">
-                            Last modified @ {updatedAt}
+                            Last modified @ {updatedAtLocal}
                         </span>
                     </div>
                 </div>

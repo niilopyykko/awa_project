@@ -99,6 +99,8 @@ export default function Editor({ driveContent, driveName, driveEditors, driveCom
                 if (idToUnlock) {
                     await releaseLock()
                 }
+                // Redirect to front page
+                window.location.href = "/";
             } else {
                 let errorBody = null
                 try {

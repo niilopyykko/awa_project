@@ -14,6 +14,7 @@ export async function registerAction(prev: LoginState, formData:FormData) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   })
+  console.log(res)
 
   const data = await res.json()
   if (!res.ok) return { message: data.message }

@@ -46,11 +46,6 @@ export default async function HomePage({ searchParams }: Props) {
   }
 
 
-  function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleString("fi-FI", {
-      timeZone: "Europe/Helsinki",
-    });
-  }
 
 
   // Fetch documents
@@ -60,11 +55,8 @@ export default async function HomePage({ searchParams }: Props) {
   const filtered = await filterDocuments(allDocuments, query);
   const sorted = await sortDocuments(filtered, sortKey, sortOrder);
 
-  const formatted = sorted.map(doc => ({
-    ...doc,
-    createdAtFormatted: formatDate(doc.createdAt),
-    updatedAtFormatted: formatDate(doc.updatedAt),
-  }));
+  // Pass raw date strings to client; format in client to avoid hydration issues
+  const formatted = sorted;
 
   // Pass all sorted documents to client for responsive pagination
   return (

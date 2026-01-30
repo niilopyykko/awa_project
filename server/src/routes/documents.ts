@@ -189,7 +189,7 @@ router.patch("/documents/:id", validateToken, async (req: CustomRequest, res: Re
 router.get("/share/:shareToken/file", async (req: Request, res: Response) => {
   try {
     const doc = await UserDocument.findOne({ shareToken: req.params.shareToken });
-    if (!doc || !doc.filepath) {
+    if (!doc || doc.trash || !doc.filepath) {
       return res.status(404).json({ message: "File not found" });
     }
 
