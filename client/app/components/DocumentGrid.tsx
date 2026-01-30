@@ -14,8 +14,10 @@ interface DocumentGridProps {
     isMobile?: boolean;
     trashCount?: number;
     driveCount?: number;
-    trash: boolean
-
+    trash: boolean;
+    isPublic?: boolean;
+    hasShareLink?: boolean;
+    sharedWith?: string;
 }
 
 export default function DocumentGrid({
@@ -30,7 +32,7 @@ export default function DocumentGrid({
     isMobile,
     trashCount = 0,
     driveCount,
-    trash
+    trash,
 }: DocumentGridProps) {
     return (
         <>

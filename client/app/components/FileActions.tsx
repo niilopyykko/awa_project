@@ -43,8 +43,6 @@ export default function FileActions({ userDocument, currentUsername }: FileActio
     // Don't render on server to prevent hydration mismatch with react-aria IDs
     if (!isHydrated) return null;
 
-    const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL;
-
     const openEditor = () => {
         try {
             sessionStorage.setItem("editorContent", userDocument.content || "");
@@ -129,7 +127,7 @@ export default function FileActions({ userDocument, currentUsername }: FileActio
 
                                     const url = usePdf
                                         ? `/api/proxy/documents/${userDocument._id}/pdf`
-                                        : `/api/proxy/documents/${userDocument._id}?download=1`;
+                                        : `/api/proxy/documents/${userDocument._id}/file?download=1`;
 
                                     const res = await fetch(url, { credentials: "include" });
                                     if (!res.ok) throw new Error("Download failed");

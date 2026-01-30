@@ -14,6 +14,7 @@ import {
 } from "react-icons/io5";
 import type { DocumentSortKey } from "../types";
 
+
 interface ToolbarProps {
     page: number;
     totalPages: number;
@@ -52,7 +53,7 @@ export default function Toolbar({
     }, []);
 
     // Update URL parameters
-    const update = (params: Record<string, string | number | boolean>) => {
+    const update = (params: Record<string, string | number | boolean | undefined>) => {
         const nextTrash =
             params.trash !== undefined ? params.trash : trash;
 
@@ -77,8 +78,8 @@ export default function Toolbar({
                 className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-xl sm:text-2xl"
             >
                 <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                    {/* Search */}
-                    <div className="relative flex items-center">
+                    {/* Search and Filters */}
+                    <div className="relative flex items-center gap-2">
                         <input
                             value={query}
                             onChange={(e) => update({ query: e.target.value, page: 1 })}

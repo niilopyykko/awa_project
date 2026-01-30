@@ -54,24 +54,35 @@ export async function fetchDocuments(token: string | null): Promise<IDocument[]>
   return [];
 }
 
+
 export async function filterDocuments(
   documents: IDocument[],
   query: string,
-  trash?: boolean
+  trash?: boolean,
+  isPublic?: boolean,
+  hasShareLink?: boolean,
+  sharedWith?: string
 ): Promise<IDocument[]> {
+  let filtered = trash === undefined
+    ? documents
+    : documents.filter(doc => doc.trash === trash);
 
-  // 1) Suodata roskakorin mukaan vain jos trash-parametri on annettu
-  const filteredByTrash =
-    trash === undefined
-      ? documents
-      : documents.filter(doc => doc.trash === trash);
+  if (isPublic !== undefined) {
+    filtered = filtered.filter(doc => doc.isVisibleNonAuth === isPublic);
+  }
+  if (hasShareLink !== undefined) {
+    filtered = filtered.filter(doc => hasShareLink ? !!doc.shareToken : !doc.shareToken);
+  }
+  if (sharedWith) {
+    filtered = filtered.filter(doc =>
+      doc.editors.some(e => e.username === sharedWith)
+    );
+  }
 
-  // 2) Jos ei hakusanaa → palauta lista
-  if (!query.trim()) return filteredByTrash;
+  if (!query.trim()) return filtered;
 
-  // 3) Suodata hakusanan mukaan
   const q = query.toLowerCase();
-  return filteredByTrash.filter(doc =>
+  return filtered.filter(doc =>
     doc.name.toLowerCase().includes(q)
   );
 }

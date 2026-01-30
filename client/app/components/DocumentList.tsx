@@ -14,7 +14,10 @@ interface DocumentListProps {
     isMobile?: boolean;
     trashCount?: number;
     driveCount?: number;
-    trash: boolean
+    trash: boolean;
+    isPublic?: boolean;
+    hasShareLink?: boolean;
+    sharedWith?: string;
 }
 
 export default function DocumentList({
@@ -29,7 +32,7 @@ export default function DocumentList({
     isMobile,
     trashCount = 0,
     driveCount,
-    trash
+    trash,
 }: DocumentListProps) {
     return (
         <>

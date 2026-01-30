@@ -16,7 +16,10 @@ interface Props {
   query: string;
   initialView: "grid" | "list";
   allDocuments: IDocument[];
-  trash: boolean
+  trash: boolean;
+  isPublic?: boolean;
+  hasShareLink?: boolean;
+  sharedWith?: string;
 }
 
 export function AutoPollDocuments() {
@@ -44,6 +47,9 @@ export default function HomeViewClient({
   initialView,
   allDocuments,
   trash,
+  isPublic,
+  hasShareLink,
+  sharedWith,
 }: Props) {
   const router = useRouter();
   const [hydrated] = useState(() => true); //nice trick
@@ -66,7 +72,10 @@ export default function HomeViewClient({
   };
   const pageSize = getPageSize();
   // 1) Filter documents by trash status
-  const filteredDocs = allDocuments.filter(doc => doc.trash === trash);
+  let filteredDocs = allDocuments.filter(doc => doc.trash === trash);
+  if (isPublic !== undefined) filteredDocs = filteredDocs.filter(doc => doc.isVisibleNonAuth === isPublic);
+  if (hasShareLink !== undefined) filteredDocs = filteredDocs.filter(doc => hasShareLink ? !!doc.shareToken : !doc.shareToken);
+  if (sharedWith) filteredDocs = filteredDocs.filter(doc => doc.editors.some(e => e.username === sharedWith));
 
   // 2) Calculate total pages based on filtered documents
   const totalPages = Math.max(1, Math.ceil(filteredDocs.length / pageSize));
@@ -117,7 +126,6 @@ export default function HomeViewClient({
           trashCount={trashCount}
           driveCount={driveCount}
           trash={trash}
-
         />
       ) : (
         <DocumentList

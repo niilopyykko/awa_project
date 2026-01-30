@@ -37,8 +37,8 @@ export default async function SharePage(props: {
     const isVideo = ext ? ["mp4", "webm", "ogg"].includes(ext) : false;
 
     return (
-        <div className="w-screen bg-background text-foreground flex flex-col items-center justify-center">
-            <div className="w-full max-w-fit flex flex-col items-center px-4 py-6">
+        <div className="w-screen text-foreground flex flex-col items-center justify-center">
+            <div className="w-full flex flex-col items-center px-4 py-6">
 
                 {/* Title + Owner */}
                 <div className="w-full max-w-2xl text-center mb-6">
@@ -53,13 +53,13 @@ export default async function SharePage(props: {
                     <>
                         {/* IMAGE */}
                         {isImage && (
-                            <div className="relative w-full max-w-4xl h-[75vh] flex items-center justify-center">
+                            <div className="relative w-full min-h-[40vh] h-[75vh] flex items-center justify-center">
                                 <Image
                                     src={`${fileUrl}?img=1`}
                                     alt={doc.name}
                                     fill
                                     sizes="100vw"
-                                    className="object-contain rounded-xl shadow-xl border border-border"
+                                    className="object-contain rounded-xl mx-auto"
                                     priority
                                 />
                             </div>
