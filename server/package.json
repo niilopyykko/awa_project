@@ -17,12 +17,12 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-validator": "^7.3.1",
-    "html-pdf-node": "^1.0.7",
     "jsonwebtoken": "^9.0.3",
     "mime": "^4.1.0",
     "mongoose": "^9.1.5",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
+    "puppeteer": "^24.36.1",
     "sass": "^1.97.3"
   },
   "devDependencies": {

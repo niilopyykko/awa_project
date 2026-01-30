@@ -189,7 +189,7 @@ router.patch("/documents/:id", validateToken, async (req: CustomRequest, res: Re
 router.get("/share/:shareToken/file", async (req: Request, res: Response) => {
   try {
     const doc = await UserDocument.findOne({ shareToken: req.params.shareToken });
-    if (!doc || doc.trash || !doc.filepath) {
+    if (!doc || !doc.filepath) {
       return res.status(404).json({ message: "File not found" });
     }
 
@@ -762,22 +762,23 @@ router.get(
 
       const html = `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:24px;} .title{font-size:20px;font-weight:600;margin-bottom:12px}</style></head><body><div class="title">${doc.name}</div>${doc.content || ""}</body></html>`;
 
-      const html_to_pdf = require("html-pdf-node");
-      const options = {
-        format: "A4",
-        printBackground: true,
-        launchOptions: {
-          args: ["--no-sandbox", "--disable-setuid-sandbox"],
-        },
-      };
-      const pdfBuffer = await html_to_pdf.generatePdf({ content: html }, options);
+      // Use Playwright for PDF generation
+      const { chromium } = require('playwright');
+      const browser = await chromium.launch({ args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle' });
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true
+      });
+      await browser.close();
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${doc.name || "document"}.pdf"`
       );
-      return res.send(Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer));
+      return res.send(pdfBuffer);
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: "PDF generation error" });
