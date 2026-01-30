@@ -2,8 +2,6 @@ import Image from "next/image";
 import FileActions from "./FileActions";
 import { IDocument } from "../types";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL;
-
 type StatusInfo = { label: string; colorClass: string };
 
 function computeStatus({
@@ -49,12 +47,7 @@ export default function DocumentCard({ doc, currentUser, createdAt, updatedAt, c
     });
 
     // Direct backend URL for preview images and videos
-    const fileUrl =
-        doc.filepath
-            ? isPublic
-                ? `${BACKEND}/api/publicUploads/${doc._id}`
-                : `${BACKEND}/api/uploads/${doc._id}`
-            : null;
+    const fileUrl = doc.filepath ? `/api/proxy/documents/${doc._id}/file` : null;
 
     function renderPlainText(html: string) {
         return html.replace(/<[^>]+>/g, "");

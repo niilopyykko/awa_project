@@ -184,6 +184,84 @@ router.patch("/documents/:id", validateToken, async (req: CustomRequest, res: Re
 });
 
 // ------------------------
+// Public share file download/preview
+// ------------------------
+router.get("/share/:shareToken/file", async (req: Request, res: Response) => {
+  try {
+    const doc = await UserDocument.findOne({ shareToken: req.params.shareToken });
+    if (!doc || doc.trash || !doc.filepath) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    const absolutePath = path.join(uploadsDir, path.basename(doc.filepath));
+    if (!fs.existsSync(absolutePath)) {
+      console.error("File not found:", absolutePath);
+      return res.status(404).json({ message: "File not found on disk" });
+    }
+
+    const download = req.query.download === "1" || req.query.download === "true";
+    if (download) {
+      const downloadName = doc.name || path.basename(doc.filepath);
+      res.setHeader("Content-Disposition", `attachment; filename="${downloadName}"`);
+    }
+
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    return res.sendFile(absolutePath);
+  } catch (err) {
+    console.error("Share file error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ------------------------
+// Secure file download/preview for document cards (owner/editor/public only)
+// ------------------------
+router.get("/documents/:id/file", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id;
+    let userId: string | null = null;
+
+    // Try to extract userId from Authorization header (JWT)
+    try {
+      const auth = req.header("authorization")?.split(" ")[1];
+      if (auth) userId = (jwt.verify(auth, process.env.SECRET as string) as any).id || null;
+    } catch (e) { userId = null; }
+
+    const doc = await UserDocument.findById(id);
+    if (!doc || doc.trash || !doc.filepath) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    const isOwner = String((doc.owner as any)?._id || doc.owner) === String(userId);
+    const editorsArr: string[] = (doc.editors || []).map((e: any) => (e._id ? e._id.toString() : e.toString()));
+    const isEditor = userId ? editorsArr.includes(String(userId)) : false;
+    const isPublic = doc.isVisibleNonAuth === true;
+
+    if (!isPublic && !isOwner && !isEditor) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const absolutePath = path.join(uploadsDir, path.basename(doc.filepath));
+    if (!fs.existsSync(absolutePath)) {
+      console.error("File not found:", absolutePath);
+      return res.status(404).json({ message: "File not found on disk" });
+    }
+
+    const download = req.query.download === "1" || req.query.download === "true";
+    if (download) {
+      const downloadName = doc.name || path.basename(doc.filepath);
+      res.setHeader("Content-Disposition", `attachment; filename="${downloadName}"`);
+    }
+
+    res.setHeader("Cache-Control", "private, max-age=31536000, immutable");
+    return res.sendFile(absolutePath);
+  } catch (err) {
+    console.error("Secure file error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ------------------------
 // Document lock management
 // ------------------------
 router.post("/documents/:id/lock", validateToken, async (req: CustomRequest, res: Response) => {

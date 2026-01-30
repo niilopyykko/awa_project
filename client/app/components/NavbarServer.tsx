@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic"
 export const fetchCache = "force-no-store"
 
 export default async function NavbarServer() {
-    const backend = process.env.NEXT_PUBLIC_BACKEND_URL
+    const backend = process.env.BACKEND_URL
     const cookieStore = await cookies()
     const token = cookieStore.get("token")?.value ?? null
 
