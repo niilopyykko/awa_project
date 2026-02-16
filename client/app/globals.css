@@ -25,7 +25,15 @@ select {
 }
 
 /* Text elements - subtle delay */
-h1, h2, h3, h4, h5, h6, p, span, label {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+label {
   transition: color 0.22s ease 0.03s;
 }
 
@@ -95,13 +103,35 @@ html.theme-switching .card {
 }
 
 @keyframes staggerFlip {
-  0% { opacity: 0.95; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 0.95;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
-html.theme-switching .card:nth-child(1) { animation-delay: 0ms; }
-html.theme-switching .card:nth-child(2) { animation-delay: 50ms; }
-html.theme-switching .card:nth-child(3) { animation-delay: 100ms; }
-html.theme-switching .card:nth-child(4) { animation-delay: 150ms; }
-html.theme-switching .card:nth-child(5) { animation-delay: 200ms; }
-html.theme-switching .card:nth-child(n+6) { animation-delay: calc(200ms + (var(--index, 0) * 50ms)); }
+html.theme-switching .card:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+html.theme-switching .card:nth-child(2) {
+  animation-delay: 25ms;
+}
+
+html.theme-switching .card:nth-child(3) {
+  animation-delay: 50ms;
+}
+
+html.theme-switching .card:nth-child(4) {
+  animation-delay: 75ms;
+}
+
+html.theme-switching .card:nth-child(5) {
+  animation-delay: 100ms;
+}
+
+html.theme-switching .card:nth-child(n+6) {
+  animation-delay: calc(100ms + (var(--index, 0) * 25ms));
+}

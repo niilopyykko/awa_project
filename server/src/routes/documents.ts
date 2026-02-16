@@ -30,7 +30,7 @@ router.get("/documents", validateToken, async (req: CustomRequest, res: Response
     const query = (req.query.query as string) ?? "";
     const trash = req.query.trash === "true";
 
-    // Perusfiltteri
+    // baseFilter
     const baseFilter: any = {
       $and: [
         {
@@ -43,7 +43,7 @@ router.get("/documents", validateToken, async (req: CustomRequest, res: Response
       ],
     };
 
-    // Hakufiltteri
+    // search filter
     if (query.trim() !== "") {
       baseFilter.$and.push({
         name: { $regex: query, $options: "i" },

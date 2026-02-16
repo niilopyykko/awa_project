@@ -7,7 +7,7 @@ const API = process.env.BACKEND_URL;
 
 export async function fetchDocuments(token: string | null): Promise<IDocument[]> {
   token = (await cookies()).get("token")?.value?? null;
-   // 1) No token → fetch only public documents
+   // 1) No token, fetch only public documents
   if (!token) {
     try {
       const pubRes = await fetch(`${API}/api/publicDocuments`, {
@@ -24,7 +24,7 @@ export async function fetchDocuments(token: string | null): Promise<IDocument[]>
     return [];
   }
 
-  // 2) Has token → fetch all documents
+  // 2) Has token, fetch all documents
   try {
     const res = await fetch(`${API}/api/documents`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -40,7 +40,7 @@ export async function fetchDocuments(token: string | null): Promise<IDocument[]>
     console.error("Error fetching documents:", err);
   }
 
-  // 3) If auth request fails → fallback to public documents
+  // 3) If auth request fails, fallback to public documents
   try {
     const pubRes = await fetch(`${API}/api/publicDocuments`, {
     });

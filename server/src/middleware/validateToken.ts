@@ -16,7 +16,7 @@ export const validateToken = (req: CustomRequest, res: Response, next: NextFunct
     if (authHeader) {
         token = authHeader.split(" ")[1];
     } else if (typeof req.headers.cookie === 'string') {
-        // crude cookie parse for `token=...` if Authorization header isn't present
+        // crude cookie parse for 'token=...' if Authorization header isn't present
         if (req.headers.cookie) {
             const cookies = req.headers.cookie.split(";").map(c => c.trim());
             const tokenCookie = cookies.find(c => c.startsWith("token="));

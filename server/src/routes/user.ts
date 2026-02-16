@@ -58,7 +58,7 @@ router.post(
       const token = createToken({ id: createdUser._id, username: createdUser.username })
       setAuthCookies(res, token, createdUser.username)
 
-      // Include username so proxies can set a readable `user` cookie for client UI
+      // Include username so proxies can set a readable 'user' cookie for client UI
       res.status(200).json({ message: "User registered successfully", token, username: createdUser.username })
     } catch (error) {
       console.error("Registration error:", error)
@@ -72,20 +72,20 @@ router.get('/me/avatar', validateToken, async (req: CustomRequest, res: Response
   try {
     const userId = req.user?.id as string | undefined
     console.log('[avatar] GET /me/avatar - userId:', userId)
-    
+
     if (!userId) {
       console.warn('[avatar] Missing user id in token')
       return res.status(401).send('Unauthorized')
     }
-    
+
     const user = await User.findById(userId)
     if (!user) {
       console.warn('[avatar] User not found for id', userId)
       return res.status(404).send('User not found')
     }
-    
+
     console.log('[avatar] User found:', user.username, 'profilePic:', user.profilePic)
-    
+
     if (!user.profilePic) {
       console.warn('[avatar] No profilePic set for user', user.username)
       return res.status(404).send('No profile image')
