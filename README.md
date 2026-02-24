@@ -39,11 +39,15 @@ Quick start (development)
    ```
 
 4. Start dev servers:
+
    ```bash
-   # Terminal 1 - Start backend server
+   # Terminal 1 - Start DB server
+   mongod
+
+   # Terminal 2 - Start backend server
    cd server && npm run dev
 
-   # Terminal 2 - Start frontend
+   # Terminal 3 - Start frontend
    cd client && npm run dev
 
    # Default dev URLs: client -> http://localhost:3000, server -> http://localhost:3001
@@ -57,11 +61,15 @@ Production
    cd server && npm run build && cd ..
    ```
 2. Start production servers:
+
    ```bash
-   # Terminal 1 - Start backend
+   # Terminal 1 - Start DB server
+   mongod
+
+   # Terminal 2 - Start backend
    cd server && npm start
 
-   # Terminal 2 - Start frontend
+   # Terminal 3 - Start frontend
    cd client && npm start
    ```
 
