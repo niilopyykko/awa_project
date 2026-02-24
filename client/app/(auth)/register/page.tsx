@@ -19,10 +19,14 @@ export default function RegisterPage() {
   const [result, setResult] = useState<Registerresult | null>(null)
   const [pending, setPending] = useState(false)
   const router = useRouter()
+  const registrationDisabled = process.env.NEXT_PUBLIC_DISABLE_REGISTRATION === "true"
 
   async function handleSubmit(formData: FormData) {
+    if (registrationDisabled) return
+    setPending(true)
     const res = await registerAction(null, formData)
     setResult(res)
+    setPending(false)
 
     if (!res.success) return
 
@@ -41,6 +45,11 @@ export default function RegisterPage() {
 
   return (
     <div className="w-full min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center">
+      {registrationDisabled && (
+        <div className="w-full max-w-md mb-4 p-4 bg-red-100 border-2 border-red-400 rounded-lg text-center text-red-700 font-bold">
+          Registration is disabled.
+        </div>
+      )}
       <form action={handleSubmit}
         className="bg-bg-toolbar border-2 border-border flex flex-col items-center max-w-md m-0 p-6 space-y-4 rounded-lg shadow-lg"
       >
@@ -51,6 +60,7 @@ export default function RegisterPage() {
           placeholder="username"
           className="border-2 border-purple-500 dark:border-purple-600 bg-bg-input text-text md:text-3xl text-2xl rounded-md px-3 py-2 w-full"
           required
+          disabled={registrationDisabled}
         />
         <li className="text-text">
           Username <span className="font-bold">MUST</span> be at least 3 characters long
@@ -65,6 +75,7 @@ export default function RegisterPage() {
           placeholder="password"
           className="border-2 border-purple-500 dark:border-purple-600 bg-bg-input text-text md:text-3xl text-2xl rounded-md px-3 py-2 w-full"
           required
+          disabled={registrationDisabled}
         />
         <ul className="text-text list-disc">
           <li>Password <span className="font-bold">MUST</span> be at least 5 characters long</li>
@@ -86,6 +97,7 @@ export default function RegisterPage() {
             }
           }}
           className="bg-bg-input border-2 border-border rounded-md text-text p-2 w-full"
+          disabled={registrationDisabled}
         />
 
         {result?.message && (
@@ -93,9 +105,14 @@ export default function RegisterPage() {
             {result.message}
           </p>
         )}
+        {result && !result.success && !result.message && (
+          <p className="max-w-md mx-auto border-2 border-red-400 dark:border-red-600 p-3 text-center rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 shadow-md">
+            Registration failed.
+          </p>
+        )}
 
         <button
-          disabled={pending}
+          disabled={pending || registrationDisabled}
           type="submit"
           className="bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-700 dark:to-pink-700 dark:hover:from-purple-800 dark:hover:to-pink-800 text-white font-bold py-3 px-8 text-xl rounded-lg shadow-lg hover:shadow-xl transition-all w-full"
         >

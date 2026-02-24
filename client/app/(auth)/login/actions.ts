@@ -40,6 +40,9 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
   const username = formData.get("username") as string
   const password = formData.get("password") as string
 
-  await performLogin(username, password)
-  redirect("/")
+  const result = await performLogin(username, password)
+  if (result.success) {
+    redirect("/")
+  }
+  return result
 }
