@@ -21,14 +21,22 @@ export default function ThemeToggle({ showLabel = false, variant = 'solid', onTo
   const nextTheme = effectiveTheme === 'dark' ? 'light' : 'dark'
   const isDark = effectiveTheme === 'dark'
 
-  const base = 'flex items-center gap-2 rounded transition-all'
+  const base = 'flex items-center gap-2 rounded transition-all h-10'
   const styles = variant === 'solid'
-    ? 'bg-blue-500 dark:bg-blue-800 text-white px-2 py-2 hover:bg-blue-700 dark:hover:bg-blue-700 active:bg-blue-800'
-    : 'bg-blue-500/80 dark:bg-blue-800/80 text-white px-3 py-2 hover:bg-blue-700 dark:hover:bg-blue-700 active:bg-blue-800'
+    ? 'bg-blue-600 dark:bg-blue-700 text-white px-3 py-2 hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800'
+    : 'bg-blue-600/80 dark:bg-blue-700/80 text-white px-3 py-2 hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800'
+
+  const handleToggle = () => {
+    const root = document.documentElement
+    root.classList.add('theme-switching')
+    setTheme(nextTheme)
+    setTimeout(() => root.classList.remove('theme-switching'), 500)
+    onToggle?.()
+  }
 
   return (
     <button
-      onClick={() => { setTheme(nextTheme); onToggle?.(); }}
+      onClick={handleToggle}
       className={`${base} ${styles}`}
       aria-label="Toggle theme"
     >

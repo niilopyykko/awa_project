@@ -7,6 +7,7 @@ import path from 'path'
 import fs from 'fs'
 import upload from '../middleware/multer-config'
 import { CustomRequest, validateToken } from '../middleware/validateToken'
+import { uploadsDir } from '../../server'
 
 const router: Router = Router()
 
@@ -57,7 +58,7 @@ router.post(
       const token = createToken({ id: createdUser._id, username: createdUser.username })
       setAuthCookies(res, token, createdUser.username)
 
-      // Include username so proxies can set a readable `user` cookie for client UI
+      // Include username so proxies can set a readable 'user' cookie for client UI
       res.status(200).json({ message: "User registered successfully", token, username: createdUser.username })
     } catch (error) {
       console.error("Registration error:", error)
@@ -71,20 +72,20 @@ router.get('/me/avatar', validateToken, async (req: CustomRequest, res: Response
   try {
     const userId = req.user?.id as string | undefined
     console.log('[avatar] GET /me/avatar - userId:', userId)
-    
+
     if (!userId) {
       console.warn('[avatar] Missing user id in token')
       return res.status(401).send('Unauthorized')
     }
-    
+
     const user = await User.findById(userId)
     if (!user) {
       console.warn('[avatar] User not found for id', userId)
       return res.status(404).send('User not found')
     }
-    
+
     console.log('[avatar] User found:', user.username, 'profilePic:', user.profilePic)
-    
+
     if (!user.profilePic) {
       console.warn('[avatar] No profilePic set for user', user.username)
       return res.status(404).send('No profile image')
@@ -92,8 +93,6 @@ router.get('/me/avatar', validateToken, async (req: CustomRequest, res: Response
 
     let profilePicPath = user.profilePic
     console.log('[avatar] Initial path:', profilePicPath)
-
-    const uploadsDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')
 
     // If it's not absolute, resolve against uploadsDir and basename to avoid stray paths
     if (!path.isAbsolute(profilePicPath)) {
@@ -112,6 +111,7 @@ router.get('/me/avatar', validateToken, async (req: CustomRequest, res: Response
     }
 
     console.log('[avatar] Serving file successfully')
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
     res.sendFile(profilePicPath)
   } catch (err) {
     console.error('Avatar error:', err)
@@ -158,5 +158,30 @@ router.post(
     }
   }
 )
+
+// Get current user info
+router.get("/me", validateToken, async (req: CustomRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const user = await User.findById(userId).select("username email _id profilePic");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      id: user._id,
+      username: user.username,
+      profilePic: user.profilePic ?? null
+    });
+  } catch (err) {
+    console.error("Error in /user/me:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 export default router

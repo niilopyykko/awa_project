@@ -1,25 +1,66 @@
-"use client";
+import Toolbar from "./Toolbar";
 import DocumentCard from "./DocumentCard";
-import { IDocument } from "../../src/types";
+import type { IDocument, DocumentSortKey } from "../types";
 
-interface Props {
+interface DocumentGridProps {
     documents: IDocument[];
-    currentUser?: string | null;
-    onUpdated?: (opts?: { switchToDrive?: boolean }) => void;
+    currentUsername: string;
+    currentPage: number;
+    totalPages: number;
+    sortKey: DocumentSortKey;
+    sortOrder: "asc" | "desc";
+    query: string;
+    toggleGrid: () => void;
+    isMobile?: boolean;
+    trashCount?: number;
+    driveCount?: number;
+    trash: boolean;
+    isPublic?: boolean;
+    hasShareLink?: boolean;
+    sharedWith?: string;
 }
-export default function DocumentGrid({ documents, currentUser, onUpdated }: Props) {
+
+export default function DocumentGrid({
+    documents,
+    currentUsername,
+    currentPage,
+    totalPages,
+    sortKey,
+    sortOrder,
+    query,
+    toggleGrid,
+    isMobile,
+    trashCount = 0,
+    driveCount,
+    trash,
+}: DocumentGridProps) {
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 p-2 sm:p-4">
-            {documents.map(doc => (
-                <DocumentCard
-                    key={doc._id}
-                    doc={doc}
-                    currentUser={currentUser}
-                    onUpdated={onUpdated}
-                    compact={false}
-                />
-            ))}
-        </div>
+        <>
+            <Toolbar
+                page={currentPage}
+                totalPages={totalPages}
+                sortKey={sortKey}
+                sortOrder={sortOrder}
+                query={query}
+                gridView={true}
+                toggleGrid={toggleGrid}
+                trash={trash}
+                trashCount={trashCount}
+                driveCount={driveCount}
+                isMobile={isMobile}
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 mt-2">
+                {documents.map((doc) => (
+                    <DocumentCard
+                        key={doc._id}
+                        doc={doc}
+                        currentUser={currentUsername}
+                        createdAt={doc.createdAt.toLocaleString()}
+                        updatedAt={doc.updatedAt.toLocaleString()}
+                    />
+                ))}
+            </div>
+        </>
     );
 }
-

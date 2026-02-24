@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css"
-import Navbar from "./components/Navbar";
+import "./globals.css";
+import NavbarServer from "./components/NavbarServer";
 import { cookies } from "next/headers";
 import { Providers } from "./providers";
 
@@ -20,24 +20,34 @@ export const metadata: Metadata = {
   description: "AMAZIN APPLICATION",
 };
 
-export default async function RootLayout({
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value ?? null;
 
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  let serverToken: string | null = null
-  let serverUser: string | null = null
-  try {
-    const cookieStore = await cookies()
-    // cookies() may return a different shape in some runtimes; guard access
-    serverToken = cookieStore.get?.('token')?.value ?? null
-    serverUser = cookieStore.get?.('user')?.value ?? null
-  } catch {
-    // Not running in a server context or cookies unavailable — leave as null
-    serverToken = null
-    serverUser = null
+  let serverUser: string | null = null;
+  let serverAvatarUrl: string | null = null;
+
+  if (token) {
+    const backend = process.env.BACKEND_URL;
+
+    try {
+      const res = await fetch(`${backend}/user/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        serverUser = data.username ?? null;
+        serverAvatarUrl = data.profilePic
+          ? `${backend}/user/me/avatar`
+          : null;
+      }
+    } catch (err) {
+      console.error("SSR /user/me failed:", err);
+    }
   }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -46,13 +56,16 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen w-full overflow-x-hidden bg-background text-text`}
       >
-        <Providers serverToken={serverToken} serverUser={serverUser}>
-          <Navbar />
-          <main style={{ paddingTop: '4rem', minHeight: 'calc(100vh - 4rem)' }}>
+        <Providers
+          serverUser={serverUser}
+          serverAvatarUrl={serverAvatarUrl}
+        >
+          <NavbarServer />
+          <main style={{ paddingTop: "4rem", minHeight: "calc(100vh - 4rem)" }}>
             {children}
           </main>
         </Providers>
       </body>
-    </html >
+    </html>
   );
 }

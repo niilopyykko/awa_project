@@ -9,6 +9,8 @@ import path from "path";
 import fs from "fs";
 import { Types } from 'mongoose';
 import mime from "mime";
+import { uploadsDir } from "../../server";
+
 
 const router: Router = Router();
 
@@ -20,7 +22,16 @@ router.get("/documents", validateToken, async (req: CustomRequest, res: Response
     const userId = req.user!.id;
     const userObjectId = new Types.ObjectId(userId);
 
-    const documents: IUserDocument[] = await UserDocument.find({
+    // URL-parametrit
+    const page = Number(req.query.page ?? 1);
+    const pageSize = Number(req.query.pageSize ?? 20);
+    const sort = (req.query.sort as string) ?? "name";
+    const order = (req.query.order as string) === "desc" ? -1 : 1;
+    const query = (req.query.query as string) ?? "";
+    const trash = req.query.trash === "true";
+
+    // baseFilter
+    const baseFilter: any = {
       $and: [
         {
           $or: [
@@ -29,22 +40,45 @@ router.get("/documents", validateToken, async (req: CustomRequest, res: Response
             { isVisibleNonAuth: true },
           ],
         },
-        { $or: [{ owner: userObjectId }, { trash: { $ne: true } }] },
       ],
-    })
+    };
+
+    // search filter
+    if (query.trim() !== "") {
+      baseFilter.$and.push({
+        name: { $regex: query, $options: "i" },
+      });
+    }
+
+    // Sorting
+    const sortOptions: any = {};
+    sortOptions[sort] = order;
+
+    // Calculate total count
+    const totalCount = await UserDocument.countDocuments(baseFilter);
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+    // Fetch paginated data
+    const documents = await UserDocument.find(baseFilter)
+      .sort(sortOptions)
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
       .populate("owner", "username")
       .populate("editors", "username");
 
-    if (!documents || documents.length === 0) {
-      return res.json([]);
-    }
+    return res.json({
+      documents,
+      totalPages,
+      totalCount,
+      page,
+    });
 
-    return res.json(documents);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 // ------------------------
 // Upload or update document
@@ -57,6 +91,9 @@ router.post(
     try {
       const userId = req.user!.id;
       const { name, content, isPublic, documentId, editors } = req.body;
+
+      // Use original filename with extension if no name provided
+      const documentName = name?.trim() || req.file?.originalname || "Untitled";
 
       const editorsArray = (editors || "")
         .toString()
@@ -76,7 +113,7 @@ router.post(
           },
           {
             $set: {
-              name: name?.trim() || "Untitled",
+              name: documentName,
               content: content || "",
               isVisibleNonAuth: isPublic === "true" || isPublic === true,
               editors: editorIds,
@@ -94,7 +131,7 @@ router.post(
 
       // Create new document (shareToken and readOnlyLink generated on-demand when user clicks "Get Share Link")
       const newDoc = new UserDocument({
-        name: name?.trim() || "Untitled",
+        name: documentName,
         content: content || "",
         owner: userId,
         isVisibleNonAuth: isPublic === "true" || isPublic === true,
@@ -142,6 +179,84 @@ router.patch("/documents/:id", validateToken, async (req: CustomRequest, res: Re
     return res.json({ message: "Document updated", document: doc });
   } catch (err) {
     console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ------------------------
+// Public share file download/preview
+// ------------------------
+router.get("/share/:shareToken/file", async (req: Request, res: Response) => {
+  try {
+    const doc = await UserDocument.findOne({ shareToken: req.params.shareToken });
+    if (!doc || doc.trash || !doc.filepath) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    const absolutePath = path.join(uploadsDir, path.basename(doc.filepath));
+    if (!fs.existsSync(absolutePath)) {
+      console.error("File not found:", absolutePath);
+      return res.status(404).json({ message: "File not found on disk" });
+    }
+
+    const download = req.query.download === "1" || req.query.download === "true";
+    if (download) {
+      const downloadName = doc.name || path.basename(doc.filepath);
+      res.setHeader("Content-Disposition", `attachment; filename="${downloadName}"`);
+    }
+
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    return res.sendFile(absolutePath);
+  } catch (err) {
+    console.error("Share file error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ------------------------
+// Secure file download/preview for document cards (owner/editor/public only)
+// ------------------------
+router.get("/documents/:id/file", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id;
+    let userId: string | null = null;
+
+    // Try to extract userId from Authorization header (JWT)
+    try {
+      const auth = req.header("authorization")?.split(" ")[1];
+      if (auth) userId = (jwt.verify(auth, process.env.SECRET as string) as any).id || null;
+    } catch (e) { userId = null; }
+
+    const doc = await UserDocument.findById(id);
+    if (!doc || doc.trash || !doc.filepath) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    const isOwner = String((doc.owner as any)?._id || doc.owner) === String(userId);
+    const editorsArr: string[] = (doc.editors || []).map((e: any) => (e._id ? e._id.toString() : e.toString()));
+    const isEditor = userId ? editorsArr.includes(String(userId)) : false;
+    const isPublic = doc.isVisibleNonAuth === true;
+
+    if (!isPublic && !isOwner && !isEditor) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const absolutePath = path.join(uploadsDir, path.basename(doc.filepath));
+    if (!fs.existsSync(absolutePath)) {
+      console.error("File not found:", absolutePath);
+      return res.status(404).json({ message: "File not found on disk" });
+    }
+
+    const download = req.query.download === "1" || req.query.download === "true";
+    if (download) {
+      const downloadName = doc.name || path.basename(doc.filepath);
+      res.setHeader("Content-Disposition", `attachment; filename="${downloadName}"`);
+    }
+
+    res.setHeader("Cache-Control", "private, max-age=31536000, immutable");
+    return res.sendFile(absolutePath);
+  } catch (err) {
+    console.error("Secure file error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -205,7 +320,9 @@ router.post("/documents/:id/generate-share-link", validateToken, async (req: Cus
     const editorsArr = (doc.editors || []).map((e: any) => (e._id ? e._id.toString() : e));
     const isEditor = editorsArr.includes(userId);
 
-    if (!isOwner && !isEditor) return res.status(403).json({ message: "No permission" });
+    if (!isOwner && !isEditor) {
+      return res.status(403).json({ message: "No permission" });
+    }
 
     // If shareToken already exists, return it
     if (doc.shareToken && doc.readOnlyLink) {
@@ -213,19 +330,87 @@ router.post("/documents/:id/generate-share-link", validateToken, async (req: Cus
     }
 
     // Generate new shareToken and readOnlyLink
+
     const shareToken = randomUUID();
-    const PUBLIC_URL = process.env.PUBLIC_SERVER_URL || `http://localhost:${process.env.PORT}`;
-    const readOnlyLink = `${PUBLIC_URL}/documents/${shareToken}/readonly`;
+    const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
+
+    // New correct link for gateway architecture
+    const readOnlyLink = `${CLIENT_URL}/share/${shareToken}`;
 
     doc.shareToken = shareToken;
     doc.readOnlyLink = readOnlyLink;
     await doc.save();
 
-    return res.json({ readOnlyLink: doc.readOnlyLink, shareToken: doc.shareToken });
+    return res.json({ readOnlyLink, shareToken });
   } catch (err) {
     console.error("generate-share-link error:", err);
     const message = err instanceof Error ? err.message : "Internal server error";
     return res.status(500).json({ message });
+  }
+});
+
+
+// ------------------------
+// Public share data (frontend embedded view)
+// ------------------------
+router.get("/share/:shareToken", async (req: Request, res: Response) => {
+
+  const doc = await UserDocument.findOne({ shareToken: req.params.shareToken });
+
+  try {
+    const doc = await UserDocument
+      .findOne({ shareToken: req.params.shareToken })
+      .populate("owner", "username");
+
+    if (!doc || doc.trash) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    const fileUrl = doc.filepath ? `/api/share/${doc.shareToken}/file` : null;
+
+    return res.json({
+      document: {
+        id: doc._id,
+        name: doc.name,
+        owner: (doc.owner as any)?.username ?? null,
+        content: doc.content ?? null,
+        filepath: doc.filepath ?? null,
+        fileUrl,
+      },
+    });
+  } catch (err) {
+    console.error("Share data error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ------------------------
+// Public share file download/preview
+// ------------------------
+router.get("/share/:shareToken/file", async (req: Request, res: Response) => {
+  try {
+    const doc = await UserDocument.findOne({ shareToken: req.params.shareToken });
+    if (!doc || doc.trash || !doc.filepath) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    const absolutePath = path.join(uploadsDir, path.basename(doc.filepath));
+    if (!fs.existsSync(absolutePath)) {
+      console.error("File not found:", absolutePath);
+      return res.status(404).json({ message: "File not found on disk" });
+    }
+
+    const download = req.query.download === "1" || req.query.download === "true";
+    if (download) {
+      const downloadName = doc.name || path.basename(doc.filepath);
+      res.setHeader("Content-Disposition", `attachment; filename="${downloadName}"`);
+    }
+
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    return res.sendFile(absolutePath);
+  } catch (err) {
+    console.error("Share file error:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -441,6 +626,10 @@ router.post("/documents/:id/trash", validateToken, async (req: CustomRequest, re
 
     if (isOwner) {
       doc.trash = true;
+      doc.isVisibleNonAuth = false;
+      doc.editors = [];
+      doc.shareToken = null;
+      doc.readOnlyLink = null;
       await doc.save();
       return res.json({ message: "Moved to trash", document: doc });
     }
@@ -480,8 +669,7 @@ router.delete("/documents/:id", validateToken, async (req: CustomRequest, res: R
     if (String(doc.owner) !== req.user!.id) return res.status(403).json({ message: "Only owner can delete" });
 
     if (doc.filepath) {
-      const uploadsDir = process.env.UPLOAD_DIR || "/uploads";
-      const filePath = path.join(uploadsDir, doc.filepath);
+      const filePath = path.join(uploadsDir, path.basename(doc.filepath));
       if (fs.existsSync(filePath)) await fs.promises.unlink(filePath);
     }
     await UserDocument.deleteOne({ _id: req.params.id });
@@ -547,66 +735,117 @@ router.get("/publicDocuments", async (req: Request, res: Response) => {
 });
 
 // ------------------------
-// PDF generation
+// PDF generation (protected)
 // ------------------------
-router.get("/documents/:id/pdf", async (req: Request, res: Response) => {
-  try {
-    const doc = await UserDocument.findById(req.params.id).populate("owner", "username").populate("editors", "username");
-    if (!doc) return res.status(404).json({ message: "Document not found" });
+router.get(
+  "/documents/:id/pdf",
+  validateToken,
+  async (req: CustomRequest, res: Response) => {
+    try {
+      const doc = await UserDocument
+        .findById(req.params.id)
+        .populate("owner", "username")
+        .populate("editors", "username");
 
-    const html = `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:24px;} .title{font-size:20px;font-weight:600;margin-bottom:12px}</style></head><body><div class="title">${doc.name}</div>${doc.content || ""}</body></html>`;
+      if (!doc) return res.status(404).json({ message: "Document not found" });
 
-    const html_to_pdf = require("html-pdf-node");
-    const options = {
-      format: "A4",
-      printBackground: true,
-      launchOptions: {
-        args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      const userId = req.user?.id;
+      const isOwner = doc.owner && doc.owner._id.toString() === String(userId);
+      const isEditor = Array.isArray(doc.editors) && doc.editors.some(
+        (e: any) => e._id.toString() === String(userId)
+      );
+      const isPublic = doc.isVisibleNonAuth === true;
+
+      if (!isOwner && !isEditor && !isPublic) {
+        return res.status(403).json({ message: "Forbidden" });
       }
-    };
-    const pdfBuffer = await html_to_pdf.generatePdf({ content: html }, options);
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${doc.name || "document"}.pdf"`);
-    return res.send(Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer));
+      const html = `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:24px;} .title{font-size:20px;font-weight:600;margin-bottom:12px}</style></head><body><div class="title">${doc.name}</div>${doc.content || ""}</body></html>`;
+
+      // Use Playwright for PDF generation
+      const { chromium } = require('playwright');
+      const browser = await chromium.launch({ args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle' });
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true
+      });
+      await browser.close();
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${doc.name || "document"}.pdf"`
+      );
+      return res.send(pdfBuffer);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "PDF generation error" });
+    }
+  }
+);
+
+// ------------------------
+// Serve uploaded files (protected)
+// ------------------------
+router.get("/uploads/:id", validateToken, async (req, res) => {
+  try {
+    const doc = await UserDocument.findById(req.params.id);
+    if (!doc) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    // filepath = "uploads/file-xxxx.jpg"
+    const absolutePath = path.join(uploadsDir, path.basename(doc.filepath));
+
+    if (!fs.existsSync(absolutePath)) {
+      console.error("File not found:", absolutePath);
+      return res.status(404).json({ message: "File not found on disk" });
+    }
+
+    const download = req.query.download === "1" || req.query.download === "true";
+    if (download) {
+      const downloadName = doc.name || path.basename(doc.filepath);
+      res.setHeader("Content-Disposition", `attachment; filename="${downloadName}"`);
+    }
+
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.sendFile(absolutePath);
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "PDF generation error" });
+    console.error("Error serving file:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-// ------------------------
-// Serve uploaded files
-// ------------------------
+router.get("/publicUploads/:id", async (req, res) => {
+  try {
+    const doc = await UserDocument.findById(req.params.id);
+    if (!doc) {
+      return res.status(404).json({ message: "Document not found" });
+    }
 
-router.get("/uploads/:id", async (req: Request, res: Response) => {
-  const docId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
-  if (!docId) return res.status(400).send("Missing file ID");
+    // filepath = "uploads/file-xxxx.jpg"
+    const absolutePath = path.join(uploadsDir, path.basename(doc.filepath));
 
-  const isObjectId = Types.ObjectId.isValid(docId) && docId.length === 24;
-  const doc = isObjectId
-    ? await UserDocument.findById(docId)
-    : await UserDocument.findOne({ shareToken: docId });
+    if (!fs.existsSync(absolutePath)) {
+      console.error("File not found:", absolutePath);
+      return res.status(404).json({ message: "File not found on disk" });
+    }
+    if (doc.isVisibleNonAuth) {
+      const download = req.query.download === "1" || req.query.download === "true";
+      if (download) {
+        const downloadName = doc.name || path.basename(doc.filepath);
+        res.setHeader("Content-Disposition", `attachment; filename="${downloadName}"`);
+      }
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      res.sendFile(absolutePath);
+    }
 
-  if (!doc) return res.status(404).send("Document not found");
-  if (!doc.filepath) return res.status(404).send("File not found");
-
-  const uploadsDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
-  let filePath = doc.filepath;
-
-  // Support both absolute paths and stored filenames
-  if (!path.isAbsolute(filePath)) {
-    filePath = path.join(uploadsDir, path.basename(filePath));
+  } catch (err) {
+    console.error("Error serving file:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
-
-  // Ensure absolute for sendFile
-  filePath = path.resolve(filePath);
-
-  if (!fs.existsSync(filePath)) return res.status(404).send("File not found");
-
-  const mimeType = mime.getType(filePath) || "application/octet-stream";
-  res.type(mimeType);
-  return res.sendFile(filePath);
 });
 
 

@@ -1,444 +1,290 @@
-"use client";
-import { IUser } from "@/src/types";
+"use client"
+
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@heroui/react";
+import type { IDocument } from "../types";
+import { useEffect, useState } from "react";
+
+import {
+    deleteDocument,
+    trashDocument,
+    restoreDocument,
+    renameDocument,
+    togglePublic,
+    shareDocument,
+    removeCollaboratorAction,
+    revokeShareLink,
+    copyDocument,
+    generateShareLink,
+} from "@/app/documents/actions";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../context/AuthContext";
 
-const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
-const ORIGIN = API.replace(/\/api$/, '')
 interface FileActionsProps {
-    fileId: string;
-    fileName: string;
-    isTrashed?: boolean;
-    fileOwner?: string
-    currentUsername?: string
-    editors?: string[]
-    hasFile?: boolean
-    isPublic?: boolean
-    hasShareLink?: boolean
-    hasEditorsAssigned?: boolean
-    onUpdated?: (opts?: { switchToDrive?: boolean }) => void
-}
-type StatusInfo = { label: string; colorClass: string };
-
-function computeStatus({ isPublic, hasShareLink, hasEditorsAssigned }: { isPublic?: boolean; hasShareLink?: boolean; hasEditorsAssigned?: boolean; }): StatusInfo {
-    if (isPublic) return { label: 'Public', colorClass: 'bg-green-200 dark:bg-green-800 text-green-900 dark:text-green-100' };
-    if (hasShareLink) return { label: 'Link only', colorClass: 'bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100' };
-    if (hasEditorsAssigned) return { label: 'Shared', colorClass: 'bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-purple-100' };
-    return { label: 'Private', colorClass: 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100' };
+    userDocument: IDocument;
+    currentUsername: string;
 }
 
-export default function FileActions({ fileId, fileName, isTrashed = false, fileOwner, currentUsername, editors = [], hasFile = false, isPublic = false, hasShareLink = false, hasEditorsAssigned = false, onUpdated }: FileActionsProps) {
+export default function FileActions({ userDocument, currentUsername }: FileActionsProps) {
     const router = useRouter();
-    const { token } = useAuth();
-    // Strict props-based visibility: require currentUsername prop and owner match
-    if (!currentUsername) return null;
-    const isOwner = fileOwner && String(currentUsername) === String(fileOwner);
-    const isEditor = Array.isArray(editors) && editors.map(String).includes(String(currentUsername));
+    const [isHydrated, setIsHydrated] = useState(false);
+
+    useEffect(() => {
+        setIsHydrated(true);
+    }, []);
+    const isOwner = userDocument.owner?.username === currentUsername;
+    const isEditor = userDocument.editors?.some(e => e.username === currentUsername);
+    const isTrashed = userDocument.trash;
+    const isPublic = userDocument.isVisibleNonAuth;
+    const hasEditorsAssigned = userDocument.editors && userDocument.editors.length > 0;
+    const hasShareLink = !!userDocument.shareToken;
+    const isFile = !!userDocument.filepath
+
     if (!isOwner && !isEditor) return null;
 
-    const status = computeStatus({ isPublic, hasShareLink, hasEditorsAssigned });
+    // Don't render on server to prevent hydration mismatch with react-aria IDs
+    if (!isHydrated) return null;
 
-    const api = async (path: string, method = 'POST', callOnUpdated = true) => {
+    const openEditor = () => {
         try {
-            const res = await fetch(path, {
-                method,
-                credentials: 'include'
-            });
-            if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-            if (callOnUpdated && onUpdated) onUpdated();
-            try { router.refresh(); } catch { }
+            sessionStorage.setItem("editorContent", userDocument.content || "");
+            sessionStorage.setItem("editorName", userDocument.name);
+            sessionStorage.setItem("editorId", userDocument._id);
+            sessionStorage.setItem(
+                "editorEditors",
+                (userDocument.editors?.map((e) => e.username) ?? []).join(", ")
+            );
+            sessionStorage.setItem("editorIsPublic", String(userDocument.isVisibleNonAuth));
+            router.push(`/editor?id=${userDocument._id}`);
         } catch (err) {
-            console.error(err);
-            alert('Action failed. See console for details.');
-        }
-    };
-    const handleTogglePublic = async () => {
-        try {
-            const res = await fetch(`/api/proxy/documents/${fileId}`, { method: 'GET', credentials: 'include' });
-            if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
-            const data = await res.json();
-            const doc = data?.document || data || {};
-            const current = !!doc.isVisibleNonAuth;
-            const confirmMsg = current ? `Make "${fileName}" private?` : `Make "${fileName}" public to everyone?`;
-            if (!confirm(confirmMsg)) return;
-
-            const setRes = await fetch(`/api/proxy/documents/${fileId}/visibility`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ makePublic: !current })
-            });
-            if (!setRes.ok) {
-                let msg = `Set visibility failed: ${setRes.status}`;
-                try { const j = await setRes.json(); if (j && j.message) msg += ` - ${j.message}` } catch { }
-                alert(msg);
-                return;
-            }
-            alert(`Visibility updated`);
-            if (onUpdated) onUpdated();
-            try { router.refresh(); } catch { }
-        } catch (err) {
-            console.error(err);
-            alert('Could not update visibility. See console for details.');
-        }
-    };
-    // here we use web browser confirmation so no files are accidentally deleted
-    const handleTrash = async () => {
-        if (isOwner) {
-            const confirmed = confirm(`Move "${fileName}" to trash?`);
-            if (!confirmed) return;
-
-            try {
-                await api(`/api/proxy/documents/${fileId}/trash`, 'POST', true);
-                alert(`"${fileName}" moved to trash`);
-                if (onUpdated) onUpdated();
-            } catch (err) {
-                console.error(err);
-                alert('Could not move document to trash. See console for details.');
-            }
-            return;
-        }
-
-        if (isEditor) {
-            const confirmed = confirm(`Remove yourself as a collaborator from "${fileName}"?`);
-            if (!confirmed) return;
-
-            try {
-                const res = await fetch(`/api/proxy/documents/${fileId}/share`, {
-                    method: 'POST',
-                    credentials: 'include', // tärkeää, jotta HttpOnly-cookie lähetetään
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ remove: true }) // ei usernamea
-                });
-
-                const data = await res.json().catch(() => null);
-                if (!res.ok) {
-                    const msg = data?.message ? `Remove collaborator failed: ${data.message}` : `Remove collaborator failed: ${res.status}`;
-                    alert(msg);
-                    return;
-                }
-
-                alert('You have been removed as a collaborator');
-                if (onUpdated) onUpdated();
-            } catch (err) {
-                console.error(err);
-                alert('Could not remove collaborator. See console for details.');
-            }
-            return;
-        }
-
-        alert('You do not have permission to move this file to trash.');
-    };
-
-    const handleRestore = () => {
-        if (!confirm(`Restore "${fileName}" from trash?`)) return;
-        api(`/api/proxy/documents/${fileId}/restore`, 'POST', true);
-        // Ask parent to switch back to Drive view after restoring
-        if (onUpdated) onUpdated({ switchToDrive: true });
-    };
-
-    const handleDeletePermanent = () => {
-        if (!confirm(`Permanently delete "${fileName}"? This cannot be undone.`)) return;
-        api(`/api/proxy/documents/${fileId}`, 'DELETE', true);
-        // Request parent switch back to Drive; if trash becomes empty, UI will reflect it
-        if (onUpdated) onUpdated({ switchToDrive: true });
-    };
-    const handleDownload = async () => {
-        try {
-            // If the document has an uploaded file, download that; otherwise export text to PDF.
-            const route = hasFile ? `/api/proxy/uploads/${fileId}` : `/api/proxy/documents/${fileId}/pdf`;
-            const res = await fetch(route, {
-                method: 'GET',
-                credentials: 'include'
-            });
-
-            if (!res.ok) {
-                let msg = `Download failed: ${res.status}`;
-                try {
-                    const ct = res.headers.get('content-type') || ''
-                    if (ct.includes('application/json')) {
-                        const j = await res.json(); if (j && j.message) msg += ` - ${j.message}`;
-                    } else {
-                        const txt = await res.text(); if (txt) msg += ` - ${txt}`;
-                    }
-                } catch { }
-                throw new Error(msg);
-            }
-
-            const contentType = res.headers.get('content-type') || '';
-            if (contentType.includes('application/json')) {
-                const j = await res.json();
-                throw new Error(j?.message || 'Download returned JSON');
-            }
-
-            const blob = await res.blob();
-            let filename = fileName || 'document.pdf';
-            const cd = res.headers.get('content-disposition') || '';
-            const m = cd.match(/filename\*?=(?:UTF-8'')?"?([^";\n]+)/i);
-            if (m && m[1]) filename = decodeURIComponent(m[1]);
-
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-        } catch (err) {
-            console.error(err);
-            alert((err as Error).message || 'Download failed. See console for details.');
-        }
-    };
-    const handleCopy = async () => {
-        try {
-            // fetch original document
-            const res = await fetch(`/api/proxy/documents/${fileId}`, {
-                method: 'GET',
-                credentials: 'include'
-            });
-            if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
-            const data = await res.json();
-            const doc = data?.document || data;
-            if (!doc) {
-                alert('Original document not found');
-                return;
-            }
-
-            const newName = `Copy of ${doc.name || fileName}`;
-            const formData = new FormData();
-            formData.append('name', newName);
-            formData.append('content', doc.content || '');
-            formData.append('isPublic', String(!!doc.isVisibleNonAuth));
-            formData.append('editors', (doc.editors || []).map((e: IUser) => (e.username ? e.username : String(e))).join(','));
-
-            // If original has an uploaded file, fetch it and append as 'file' so backend receives multipart file
-            try {
-                const fileRes = await fetch(`/api/proxy/uploads/${fileId}`, { credentials: 'include' });
-                if (fileRes.ok) {
-                    const blob = await fileRes.blob();
-                    // Preserve original filename (with extension) if we have filepath; otherwise fall back to doc.name
-                    const originalName = (doc.filepath ? doc.filepath.split(/[/\\]/).pop() : null) || doc.name || fileName || 'file';
-                    formData.append('file', blob, originalName);
-                }
-            } catch (e) {
-                // ignore file fetch errors and proceed with text copy
-            }
-
-            const createRes = await fetch(`/api/proxy/upload`, {
-                method: 'POST',
-                credentials: 'include',
-                body: formData,
-            });
-
-            if (!createRes.ok) {
-                let msg = `Create copy failed: ${createRes.status}`;
-                try {
-                    const j = await createRes.json();
-                    if (j && j.message) msg += ` - ${j.message}`;
-                } catch { }
-                alert(msg);
-                return;
-            }
-
-            alert(`Created copy: ${newName}`);
-            if (onUpdated) onUpdated();
-            try { router.refresh(); } catch { }
-        } catch (err) {
-            console.error(err);
-            alert('Could not create copy. See console for details.');
-        }
-    };
-
-    const handleRename = () => {
-        const newName = prompt('New file name', fileName);
-        if (!newName) return;
-        (async () => {
-            try {
-                const res = await fetch(`/api/proxy/documents/${fileId}/rename`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: newName })
-                });
-                if (!res.ok) throw new Error('Rename failed');
-                // Notify parent to refresh its documents state (home is a client component)
-                if (onUpdated) onUpdated();
-                // also trigger app-level refresh
-                try { router.refresh(); } catch { }
-            } catch (err) {
-                console.error(err);
-                alert('Rename failed.');
-            }
-        })();
-    };
-    const handleShare = async () => {
-        const collaborator = prompt('Share with username');
-        if (!collaborator || collaborator?.length <= 1) return;
-
-        try {
-            const res = await fetch(`/api/proxy/documents/${fileId}/share`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ collaborator })
-            });
-            console.log(res)
-            if (!res.ok) {
-                let errMsg = `Share failed: ${res.status}`;
-                try {
-                    const data = await res.json();
-                    if (data && data.message) errMsg += ` - ${data.message}`;
-                } catch {
-                }
-                if (errMsg) alert(errMsg);
-                return;
-
-            }
-            alert(`Shared with ${collaborator}`);
-            if (onUpdated) onUpdated();
-            try { router.refresh(); } catch { }
-        } catch (err) {
-            console.error(err);
-            alert((err as Error).message || 'Share failed. See console for details.');
-        }
-    };
-
-    const handleLink = async () => {
-        // Generate share link on-demand when user clicks the button
-        try {
-            // First, try to fetch existing link
-            const res = await fetch(`/api/proxy/documents/${fileId}`, {
-                method: 'GET',
-                credentials: 'include'
-            });
-            if (!res.ok) throw new Error(`Fetch doc failed: ${res.status}`);
-            const data = await res.json();
-            let link = data?.readOnlyLink || data?.document?.readOnlyLink || '';
-
-            // If no link exists, generate one on-demand
-            if (!link) {
-                const generateRes = await fetch(`/api/proxy/documents/${fileId}/generate-share-link`, {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-                if (!generateRes.ok) {
-                    let errMsg = `Generate link failed: ${generateRes.status}`;
-                    try {
-                        const errBody = await generateRes.json();
-                        if (errBody?.message) errMsg += ` - ${errBody.message}`;
-                    } catch {
-                        try {
-                            const errText = await generateRes.text();
-                            if (errText) errMsg += ` - ${errText}`;
-                        } catch { }
-                    }
-                    throw new Error(errMsg);
-                }
-                const generateData = await generateRes.json();
-                link = generateData?.readOnlyLink || '';
-                // refresh state so cards/status reflect new link
-                if (onUpdated) onUpdated();
-                try { router.refresh(); } catch { }
-            }
-
-            if (link) {
-                try {
-                    await navigator.clipboard.writeText(link);
-                    alert(`View-only link copied to clipboard:\n${link}`);
-                } catch {
-                    prompt('View-only link (copy manually):', link);
-                }
-            } else {
-                alert('Could not generate read-only link for this file.');
-            }
-        } catch (err) {
-            console.error(err);
-            alert('Could not get read-only link. See console for details.');
-        }
-    };
-
-    const handleRevokeLink = async () => {
-        if (!confirm('Revoke the share link? It will stop working for everyone.')) return;
-        try {
-            const res = await fetch(`/api/proxy/documents/${fileId}/revoke-share-link`, {
-                method: 'POST',
-                credentials: 'include'
-            });
-            if (!res.ok) {
-                let msg = `Revoke link failed: ${res.status}`;
-                try { const j = await res.json(); if (j?.message) msg += ` - ${j.message}`; } catch { }
-                alert(msg);
-                return;
-            }
-            alert('Share link revoked');
-            if (onUpdated) onUpdated();
-            try { router.refresh(); } catch { }
-        } catch (err) {
-            console.error(err);
-            alert('Could not revoke link. See console for details.');
-        }
-    };
-
-    const handleRemoveCollaborator = async () => {
-        const username = prompt('Remove collaborator (username)');
-        if (!username || username.trim().length < 2) return;
-        try {
-            const res = await fetch(`/api/proxy/documents/${fileId}/share`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ removeUsername: username.trim() })
-            });
-            if (!res.ok) {
-                let msg = `Remove collaborator failed: ${res.status}`;
-                try { const j = await res.json(); if (j?.message) msg += ` - ${j.message}`; } catch { }
-                alert(msg);
-                return;
-            }
-            alert(`Removed ${username}`);
-            if (onUpdated) onUpdated();
-            try { router.refresh(); } catch { }
-        } catch (err) {
-            console.error(err);
-            alert('Could not remove collaborator. See console for details.');
+            console.error("Could not open editor", err);
         }
     };
 
     return (
         <Dropdown>
             <DropdownTrigger>
-                <Button variant="bordered" className="bg-blue-500 rounded-md text-lg">
-                    Open Menu
+                <Button variant="bordered" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md text-sm py-1 px-2">
+                    Menu
                 </Button>
             </DropdownTrigger>
-            <DropdownMenu aria-label="File Actions" className="cursor-pointer bg-blue-200 dark:bg-gray-800 rounded-md text-black dark:text-white">
+
+            <DropdownMenu
+                aria-label="File Actions"
+                className="cursor-pointer bg-gray-900 dark:bg-gray-950 rounded-md text-white shadow-lg"
+            >
                 {!isTrashed ? (
                     <>
-                        <DropdownItem key="rename" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleRename}>Rename</DropdownItem>
-                        <DropdownItem key="copy" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleCopy}>Create a Copy</DropdownItem>
-                        <DropdownItem key="download" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleDownload}>Download</DropdownItem>
-                        <DropdownItem key="share" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleShare} >Share</DropdownItem>
-                        {hasEditorsAssigned ? (<DropdownItem key="remove-collab" className="cursor-pointer m-1 px-1 text-center size-auto bg-purple-200 dark:bg-purple-800 rounded-md text-black dark:text-white" onClick={handleRemoveCollaborator}>
-                            Remove Collaborator
-                        </DropdownItem>) : (null)}
+                        {/* EDIT */}
+                        {!isFile ? (
+                            < DropdownItem
+                                key="edit"
+                                className="cursor-pointer my-1 py-1 px-2 text-center bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                                onClick={openEditor}
+                            >
+                                Edit
+                            </DropdownItem>
+                        ) : (null)}
+
+
+                        {/* RENAME */}
+                        <DropdownItem
+                            key="rename"
+                            className="cursor-pointer my-1 px-2 py-1 text-center bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                            onClick={async () => {
+                                const newName = prompt("New name:", userDocument.name);
+                                if (newName) {
+                                    await renameDocument(userDocument._id, newName);
+                                    router.refresh();
+                                }
+                            }}
+                        >
+                            Rename
+                        </DropdownItem>
+
+                        {/* COPY */}
+                        <DropdownItem
+                            key="copy"
+                            className="cursor-pointer my-1 px-2 py-1 text-center bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                            onClick={async () => {
+                                await copyDocument(userDocument._id);
+                                router.refresh();
+
+                            }}
+                        >
+                            Create a Copy
+                        </DropdownItem>
+
+                        {/* DOWNLOAD */}
+                        <DropdownItem
+                            key="download"
+                            className="cursor-pointer my-1 px-2 py-1 text-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-md"
+                            onClick={async () => {
+                                try {
+                                    const filename = userDocument.name || "download";
+                                    const filepath = userDocument.filepath || "";
+                                    const ext = filepath.split(".").pop()?.toLowerCase();
+                                    const textExts = ["txt", "md", "json", "csv", "xml", "yml", "yaml", "log"];
+                                    const usePdf = !userDocument.filepath || (ext ? textExts.includes(ext) : false);
+
+                                    const url = usePdf
+                                        ? `/api/proxy/documents/${userDocument._id}/pdf`
+                                        : `/api/proxy/documents/${userDocument._id}/file?download=1`;
+
+                                    const res = await fetch(url, { credentials: "include" });
+                                    if (!res.ok) throw new Error("Download failed");
+                                    const blob = await res.blob();
+
+                                    const downloadName = usePdf && !filename.toLowerCase().endsWith(".pdf")
+                                        ? `${filename}.pdf`
+                                        : filename;
+
+                                    const objectUrl = URL.createObjectURL(blob);
+                                    const a = globalThis.document.createElement("a");
+                                    a.href = objectUrl;
+                                    a.download = downloadName;
+                                    globalThis.document.body.appendChild(a);
+                                    a.click();
+                                    a.remove();
+                                    URL.revokeObjectURL(objectUrl);
+                                } catch (err) {
+                                    console.error(err);
+                                    alert("Download failed");
+                                }
+                            }}
+                        >
+                            Download
+                        </DropdownItem>
+
+                        {/* SHARE */}
+                        <DropdownItem
+                            key="share"
+                            className="cursor-pointer my-1 px-2 py-1 text-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-md"
+                            onClick={async () => {
+                                const username = prompt("Share with username:");
+                                if (username) {
+                                    await shareDocument(userDocument._id, username);
+                                    router.refresh();
+                                }
+                            }}
+                        >
+                            Share
+                        </DropdownItem>
+
+                        {/* REMOVE COLLABORATOR */}
+                        {hasEditorsAssigned && (
+
+                            <DropdownItem
+                                key="remove-collab"
+                                className="cursor-pointer my-1 px-2 py-1 text-center bg-purple-600 hover:bg-purple-700 text-white rounded-md"
+                                onClick={async () => {
+                                    const username = prompt("Remove collaborator username:");
+                                    if (!username) return;
+
+                                    try {
+                                        await removeCollaboratorAction(userDocument._id, username.trim(), currentUsername);
+                                        router.refresh();
+                                    } catch (err: unknown) {
+                                        const message = err instanceof Error ? err.message : "An error occurred";
+                                        alert(message);
+                                    }
+                                }}
+
+
+                            >
+                                Remove Collaborator
+                            </DropdownItem>)
+                        }
+
+
+                        {/* TOGGLE PUBLIC */}
                         <DropdownItem
                             key="visibility"
-                            className={`cursor-pointer m-1 px-1 text-center size-auto rounded-md ${!isPublic ? ('bg-amber-200 dark:bg-amber-700 text-amber-900 dark:text-amber-50') : ('bg-green-200 dark:bg-green-700 text-green-900 dark:text-green-50')}`}
-                            onClick={handleTogglePublic}
+                            className={`cursor-pointer my-1 px-2 py-1 text-center rounded-md text-white ${!isPublic
+                                ? "bg-amber-600 hover:bg-amber-700"
+                                : "bg-green-600 hover:bg-green-700"
+                                }`}
+                            onClick={async () => {
+                                await togglePublic(userDocument._id);
+                                router.refresh()
+                                //refresh text also??
+                            }}
                         >
-                            {isPublic ? 'Make Private' : 'Make Public'}
+                            {isPublic ? "Make Private" : "Make Public"}
                         </DropdownItem>
-                        <DropdownItem key="link" className="cursor-pointer m-1 px-1 text-center size-auto bg-blue-300 dark:bg-blue-700 rounded-md text-black dark:text-white" onClick={handleLink}>Get Share Link</DropdownItem>
-                        {hasShareLink ? (<DropdownItem key="revoke-link" className="cursor-pointer m-1 px-1 text-center size-auto bg-red-200 dark:bg-red-800 rounded-md text-black dark:text-white" onClick={handleRevokeLink}>Revoke Share Link</DropdownItem>) : (null)}
-                        <DropdownItem key="trash" className="cursor-pointer m-1 px-1 text-center size-auto bg-yellow-300 dark:bg-yellow-700 rounded-md text-black dark:text-white" onClick={handleTrash}>Move to Trash</DropdownItem>
 
+                        {/* GET SHARE LINK */}
+                        <DropdownItem
+                            key="link"
+                            className="cursor-pointer my-1 px-2 py-1 text-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-md"
+                            onClick={async () => {
+                                try {
+                                    let token = userDocument.shareToken || null;
+                                    if (!token) {
+                                        const data = await generateShareLink(userDocument._id);
+                                        token = data.shareToken || null;
+                                    }
+                                    if (!token) throw new Error("Share token missing");
+                                    const link = `${window.location.origin}/share/${token}`;
+                                    await navigator.clipboard.writeText(link);
+                                    alert("Share link copied to clipboard");
+                                } catch (err) {
+                                    console.error(err);
+                                    alert("Failed to generate share link");
+                                }
+                            }}
+                        >
+                            Get Share Link
+                        </DropdownItem>
+
+                        {/* REVOKE SHARE LINK */}
+                        {hasShareLink && (
+                            <DropdownItem
+                                key="revoke-link"
+                                className="cursor-pointer my-1 px-2 py-1 text-center bg-red-600 hover:bg-red-700 text-white rounded-md"
+                                onClick={async () => {
+                                    await revokeShareLink(userDocument._id);
+                                }}
+                            >
+                                Revoke Share Link
+                            </DropdownItem>
+                        )}
+
+                        {/* MOVE TO TRASH */}
+                        <DropdownItem
+                            key="trash"
+                            className="cursor-pointer my-1 px-2 py-1 text-center bg-red-600 hover:bg-red-700 text-white rounded-md"
+                            onClick={async () => {
+                                await trashDocument(userDocument._id);
+                                router.refresh();
+                            }}
+                        >
+                            Move to Trash
+                        </DropdownItem>
                     </>
                 ) : (
                     <>
-                        <DropdownItem key="restore" className="cursor-pointer m-1 px-1 text-center size-auto bg-green-300 dark:bg-green-700 rounded-md text-black dark:text-white" onClick={handleRestore}>Restore</DropdownItem>
-                        <DropdownItem key="delete" className="text-danger cursor-pointer m-1 px-1 text-center size-auto bg-red-300 dark:bg-red-700 rounded-md text-black dark:text-white" color="danger" onClick={handleDeletePermanent}>Delete Permanently</DropdownItem>
+                        {/* RESTORE */}
+                        <DropdownItem
+                            key="restore"
+                            className="cursor-pointer my-1 px-2 py-1 text-center bg-green-600 hover:bg-green-700 text-white rounded-md"
+                            onClick={async () => {
+                                await restoreDocument(userDocument._id);
+                                router.refresh();
+                            }}
+                        >
+                            Restore
+                        </DropdownItem>
+
+                        {/* DELETE PERMANENTLY */}
+                        <DropdownItem
+                            key="delete"
+                            className="cursor-pointer my-1 px-2 py-1 text-center bg-red-600 hover:bg-red-700 text-white rounded-md"
+                            onClick={async () => {
+                                await deleteDocument(userDocument._id);
+                                router.refresh();
+                            }}
+                        >
+                            Delete Permanently
+                        </DropdownItem>
                     </>
                 )}
             </DropdownMenu>

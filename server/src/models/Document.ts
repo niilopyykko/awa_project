@@ -8,8 +8,8 @@ interface IUserDocument extends Document {
     content: string;
     id?: string;
     filepath: string;
-    shareToken?: string;
-    readOnlyLink?: string;
+    shareToken?: string | null;
+    readOnlyLink?: string | null;
     lockedBy?: mongoose.Types.ObjectId;
     lockedAt?: Date;
     lockExpiresAt?: Date;
@@ -25,9 +25,9 @@ const userDocumentSchema = new Schema({
     isVisibleNonAuth: { type: Boolean, default: false },
     content: { type: String, default: null },
     filepath: { type: String, default: null },
-    shareToken: { type: String },
+    shareToken: { type: String, default: null },
     id: { type: String },
-    readOnlyLink: { type: String },
+    readOnlyLink: { type: String, default: null },
     lockedBy: { type: Schema.Types.ObjectId, ref: "User" },
     lockedAt: { type: Date, default: null },
     lockExpiresAt: { type: Date, default: null },
